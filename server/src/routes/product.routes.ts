@@ -1,0 +1,8 @@
+import { Router } from 'express'
+import { productController } from '@/controllers/product.controller.js'
+import { requireRole } from '@/middlewares/role.middleware.js'
+
+export const productRoutes = Router()
+
+// ดูสินค้า: Admin, Sales, Warehouse, Viewer
+productRoutes.get('/', requireRole('Admin', 'Sales', 'Warehouse', 'Viewer'), productController.list)
