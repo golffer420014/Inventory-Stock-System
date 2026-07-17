@@ -1,4 +1,4 @@
-# Inventory & Sales Management System
+# Inventory & Stock System
 
 ระบบบริหารจัดการการขายและคลังสินค้า (Mini ERP)
 
