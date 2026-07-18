@@ -10,6 +10,10 @@ export const salesOrderService = {
     return salesOrderRepository.create(items)
   },
 
+  addPayment: async (id: number, fileUrl: string, fileName: string): Promise<iSalesOrder> => {
+    return salesOrderRepository.addPayment(id, fileUrl, fileName)
+  },
+
   confirmSalesOrder: async (id: number): Promise<iSalesOrder> => {
     return salesOrderRepository.confirm(id)
   },

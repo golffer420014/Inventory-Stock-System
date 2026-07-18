@@ -9,19 +9,35 @@ interface SalesOrderRow {
   total_amount: string
   created_at: string
   items: { id: number; productId: number; quantity: number; unitPrice: number }[]
+  payments: { id: number; fileUrl: string; fileName: string; uploadedAt: string }[]
 }
 
+/**
+ * ใช้ LEFT JOIN LATERAL แยก aggregate ของ items กับ payments คนละ subquery
+ * เพราะทั้งคู่เป็น one-to-many กับ sales_orders — ถ้า LEFT JOIN ตรง ๆ พร้อมกันสองตาราง
+ * จะเกิด cartesian product (เช่น 2 items x 3 payments = 6 แถว) ทำให้ json_agg นับซ้ำผิด
+ */
 const ORDER_WITH_ITEMS_QUERY = `
   SELECT so.id, so.order_number, so.status, so.total_amount, so.created_at,
-    COALESCE(
-      json_agg(
-        json_build_object('id', soi.id, 'productId', soi.product_id, 'quantity', soi.quantity, 'unitPrice', soi.unit_price)
-        ORDER BY soi.id
-      ) FILTER (WHERE soi.id IS NOT NULL),
-      '[]'
-    ) AS items
+    COALESCE(items_agg.items, '[]') AS items,
+    COALESCE(payments_agg.payments, '[]') AS payments
   FROM sales_orders so
-  LEFT JOIN sales_order_items soi ON soi.sales_order_id = so.id
+  LEFT JOIN LATERAL (
+    SELECT json_agg(
+      json_build_object('id', soi.id, 'productId', soi.product_id, 'quantity', soi.quantity, 'unitPrice', soi.unit_price)
+      ORDER BY soi.id
+    ) AS items
+    FROM sales_order_items soi
+    WHERE soi.sales_order_id = so.id
+  ) items_agg ON true
+  LEFT JOIN LATERAL (
+    SELECT json_agg(
+      json_build_object('id', sop.id, 'fileUrl', sop.file_url, 'fileName', sop.file_name, 'uploadedAt', sop.uploaded_at)
+      ORDER BY sop.id
+    ) AS payments
+    FROM sales_order_payments sop
+    WHERE sop.sales_order_id = so.id
+  ) payments_agg ON true
 `
 
 const mapRow = (row: SalesOrderRow): iSalesOrder => ({
@@ -29,12 +45,13 @@ const mapRow = (row: SalesOrderRow): iSalesOrder => ({
   orderNumber: row.order_number,
   status: row.status,
   items: row.items,
+  payments: row.payments,
   totalAmount: Number(row.total_amount),
   createdAt: row.created_at,
 })
 
 const findByIdWithClient = async (client: PoolClient, id: number): Promise<iSalesOrder | null> => {
-  const result = await client.query<SalesOrderRow>(`${ORDER_WITH_ITEMS_QUERY} WHERE so.id = $1 GROUP BY so.id`, [id])
+  const result = await client.query<SalesOrderRow>(`${ORDER_WITH_ITEMS_QUERY} WHERE so.id = $1`, [id])
   return result.rows[0] ? mapRow(result.rows[0]) : null
 }
 
@@ -62,7 +79,7 @@ const lockOrderForTransition = async (
 
 export const salesOrderRepository = {
   findAll: async (): Promise<iSalesOrder[]> => {
-    const result = await pool.query<SalesOrderRow>(`${ORDER_WITH_ITEMS_QUERY} GROUP BY so.id ORDER BY so.id DESC`)
+    const result = await pool.query<SalesOrderRow>(`${ORDER_WITH_ITEMS_QUERY} ORDER BY so.id DESC`)
     return result.rows.map(mapRow)
   },
 
@@ -117,7 +134,34 @@ export const salesOrderRepository = {
   },
 
   /**
+   * แนบไฟล์หลักฐานการชำระเงินให้ Sales Order (ทำได้เฉพาะสถานะ DRAFT — ต้องแนบก่อนยืนยันคำสั่งขาย)
+   */
+  addPayment: async (id: number, fileUrl: string, fileName: string): Promise<iSalesOrder> => {
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+
+      await lockOrderForTransition(client, id, ['DRAFT'])
+
+      await client.query(
+        `INSERT INTO sales_order_payments (sales_order_id, file_url, file_name) VALUES ($1, $2, $3)`,
+        [id, fileUrl, fileName]
+      )
+
+      const order = await findByIdWithClient(client, id)
+      await client.query('COMMIT')
+      return order as iSalesOrder
+    } catch (err) {
+      await client.query('ROLLBACK')
+      throw err
+    } finally {
+      client.release()
+    }
+  },
+
+  /**
    * ยืนยันคำสั่งขาย (DRAFT -> CONFIRMED) แล้วสร้าง Invoice จากยอดรวมของคำสั่งขายนี้อัตโนมัติ
+   * ต้องมีไฟล์หลักฐานการชำระเงินแนบไว้อย่างน้อย 1 ไฟล์ก่อน ถึงจะยืนยันได้ (จำลองขั้นตอนตรวจสอบการชำระเงินจริง)
    */
   confirm: async (id: number): Promise<iSalesOrder> => {
     const client = await pool.connect()
@@ -125,6 +169,14 @@ export const salesOrderRepository = {
       await client.query('BEGIN')
 
       await lockOrderForTransition(client, id, ['DRAFT'])
+
+      const paymentCountResult = await client.query<{ count: string }>(
+        'SELECT COUNT(*) FROM sales_order_payments WHERE sales_order_id = $1',
+        [id]
+      )
+      if (Number(paymentCountResult.rows[0].count) === 0) {
+        throw new Error('PAYMENT_REQUIRED')
+      }
 
       await client.query(`UPDATE sales_orders SET status = 'CONFIRMED', updated_at = now() WHERE id = $1`, [id])
 

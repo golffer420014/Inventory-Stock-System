@@ -6,10 +6,10 @@ import { requireRole } from '@/middlewares/role.middleware.js'
 
 export const uploadRoutes = Router()
 
-// อัปโหลดรูปสินค้า: Admin เท่านั้น (README ข้อ 5 — จัดการสินค้า)
+// อัปโหลดไฟล์ทั่วไป: Admin (รูปสินค้า), Sales (ไฟล์หลักฐานการชำระเงินของ Sales Order)
 uploadRoutes.post(
   '/',
-  requireRole('Admin'),
+  requireRole('Admin', 'Sales'),
   (req: Request, res: Response, next: NextFunction) => {
     uploadImage(req, res, (err: unknown) => {
       if (err) {

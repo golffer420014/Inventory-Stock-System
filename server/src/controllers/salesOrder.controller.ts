@@ -6,6 +6,17 @@ const isNotFoundError = (err: unknown): boolean =>
   err instanceof Error && (err.message === 'SALES_ORDER_NOT_FOUND' || err.message === 'PRODUCT_NOT_FOUND')
 const isInvalidStatusError = (err: unknown): boolean => err instanceof Error && err.message === 'INVALID_STATUS'
 const isInsufficientStockError = (err: unknown): boolean => err instanceof Error && err.message === 'INSUFFICIENT_STOCK'
+const isPaymentRequiredError = (err: unknown): boolean => err instanceof Error && err.message === 'PAYMENT_REQUIRED'
+
+/**
+ * แปลง body ของการแนบไฟล์ payment ต้องมี fileUrl และ fileName เป็น string ไม่ว่างทั้งคู่
+ */
+const parsePaymentInput = (body: Record<string, unknown>): { fileUrl: string; fileName: string } | null => {
+  const fileUrl = typeof body.fileUrl === 'string' ? body.fileUrl.trim() : ''
+  const fileName = typeof body.fileName === 'string' ? body.fileName.trim() : ''
+  if (!fileUrl || !fileName) return null
+  return { fileUrl, fileName }
+}
 
 /**
  * แปลง body.items ให้เป็นรายการสินค้าที่ถูกต้อง ต้องมีอย่างน้อย 1 รายการ productId/quantity เป็นตัวเลขและ quantity > 0
@@ -57,6 +68,29 @@ export const salesOrderController = {
     }
   },
 
+  addPayment: async (req: Request, res: Response, next: NextFunction) => {
+    const payment = parsePaymentInput(req.body)
+    if (!payment) {
+      res.status(400).json({ message: 'กรุณาอัปโหลดไฟล์หลักฐานการชำระเงินก่อน' })
+      return
+    }
+
+    try {
+      const order = await salesOrderService.addPayment(parseOrderId(req), payment.fileUrl, payment.fileName)
+      res.status(201).json(order)
+    } catch (err) {
+      if (isNotFoundError(err)) {
+        res.status(404).json({ message: 'ไม่พบคำสั่งขายนี้' })
+        return
+      }
+      if (isInvalidStatusError(err)) {
+        res.status(409).json({ message: 'แนบไฟล์ได้เฉพาะคำสั่งขายที่ยังเป็นสถานะร่างเท่านั้น' })
+        return
+      }
+      next(err)
+    }
+  },
+
   confirm: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const order = await salesOrderService.confirmSalesOrder(parseOrderId(req))
@@ -68,6 +102,10 @@ export const salesOrderController = {
       }
       if (isInvalidStatusError(err)) {
         res.status(409).json({ message: 'ยืนยันได้เฉพาะคำสั่งขายที่ยังเป็นสถานะร่างเท่านั้น' })
+        return
+      }
+      if (isPaymentRequiredError(err)) {
+        res.status(409).json({ message: 'กรุณาแนบไฟล์หลักฐานการชำระเงินอย่างน้อย 1 ไฟล์ก่อนยืนยันคำสั่งขาย' })
         return
       }
       next(err)
