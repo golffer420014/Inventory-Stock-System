@@ -1,4 +1,8 @@
+import { Pool } from 'pg'
 import { env } from '@/config/env.js'
 
-// DB client (pg / Knex / Prisma) ยังไม่ได้เลือก — ต่อ client จริงที่นี่เมื่อตัดสินใจแล้ว
-export const databaseUrl = env.databaseUrl
+// Supabase Postgres ต้องต่อผ่าน SSL เสมอ
+export const pool = new Pool({
+  connectionString: env.databaseUrl,
+  ssl: { rejectUnauthorized: false },
+})

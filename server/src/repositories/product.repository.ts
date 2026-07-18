@@ -1,21 +1,121 @@
-import type { iProduct } from '@/types/product.types.js'
+import type { PoolClient } from 'pg'
+import { pool } from '@/config/database.js'
+import type { iProduct, iProductInput } from '@/types/product.types.js'
 
-// Category: 1 = Laptop, 2 = Monitor, 3 = Accessory, 4 = Component, 5 = Storage
-const productSeed: iProduct[] = [
-  { id: 1, sku: 'LAP-001', name: 'Laptop Dell Inspiron', brand: 'Dell', categoryId: 1, unit: 'เครื่อง', price: 18900, stockQuantity: 12 },
-  { id: 2, sku: 'LAP-002', name: 'MacBook Air M3', brand: 'Apple', categoryId: 1, unit: 'เครื่อง', price: 39900, stockQuantity: 8 },
-  { id: 3, sku: 'MON-001', name: 'Monitor 24 inch', brand: 'Samsung', categoryId: 2, unit: 'เครื่อง', price: 3990, stockQuantity: 20 },
-  { id: 4, sku: 'MON-002', name: 'Monitor 27 inch', brand: 'LG', categoryId: 2, unit: 'เครื่อง', price: 6990, stockQuantity: 15 },
-  { id: 5, sku: 'KB-001', name: 'Mechanical Keyboard', brand: 'Logitech', categoryId: 3, unit: 'ชิ้น', price: 1590, stockQuantity: 30 },
-  { id: 6, sku: 'MS-001', name: 'Wireless Mouse', brand: 'Logitech', categoryId: 3, unit: 'ชิ้น', price: 590, stockQuantity: 45 },
-  { id: 7, sku: 'RAM-001', name: 'DDR5 RAM 16GB', brand: 'Kingston', categoryId: 4, unit: 'ชิ้น', price: 1990, stockQuantity: 25 },
-  { id: 8, sku: 'SSD-001', name: 'SSD NVMe 1TB', brand: 'Kingston', categoryId: 5, unit: 'ชิ้น', price: 2490, stockQuantity: 18 },
-  { id: 9, sku: 'USB-001', name: 'USB-C Hub', brand: 'Ugreen', categoryId: 3, unit: 'ชิ้น', price: 890, stockQuantity: 22 },
-]
+interface ProductRow {
+  id: number
+  sku: string
+  name: string
+  brand: string
+  category_id: number
+  unit: string
+  price: string
+  stock_quantity: number
+  image_url: string | null
+}
 
-// TODO: ต่อ query จริงกับ PostgreSQL เมื่อเลือก DB client (pg / Knex / Prisma) แล้ว — ตอนนี้ใช้ seed data ชั่วคราว
+const mapRow = (row: ProductRow): iProduct => ({
+  id: row.id,
+  sku: row.sku,
+  name: row.name,
+  brand: row.brand,
+  categoryId: row.category_id,
+  unit: row.unit,
+  price: Number(row.price),
+  stockQuantity: row.stock_quantity,
+  imageUrl: row.image_url ?? undefined,
+})
+
+/**
+ * สร้าง SKU ถัดไปของหมวดหมู่ = code ของหมวดหมู่ + running number (นับต่อจากตัวที่มากสุดที่มีอยู่)
+ * ต้องเรียกหลังจาก lock แถวหมวดหมู่ (FOR UPDATE) แล้วเท่านั้น กันสินค้าสองรายการชิง running number เดียวกัน
+ */
+const nextSku = async (client: PoolClient, categoryId: number, categoryCode: string): Promise<string> => {
+  const result = await client.query<{ sku: string }>('SELECT sku FROM products WHERE category_id = $1', [
+    categoryId,
+  ])
+
+  const prefix = `${categoryCode}-`
+  const maxNumber = result.rows.reduce((max, row) => {
+    if (!row.sku.startsWith(prefix)) return max
+    const num = Number(row.sku.slice(prefix.length))
+    return Number.isFinite(num) && num > max ? num : max
+  }, 0)
+
+  return `${prefix}${String(maxNumber + 1).padStart(3, '0')}`
+}
+
 export const productRepository = {
   findAll: async (): Promise<iProduct[]> => {
-    return productSeed
+    const result = await pool.query<ProductRow>('SELECT * FROM products ORDER BY id')
+    return result.rows.map(mapRow)
+  },
+
+  create: async (input: iProductInput): Promise<iProduct> => {
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+
+      const categoryResult = await client.query<{ code: string }>(
+        'SELECT code FROM categories WHERE id = $1 FOR UPDATE',
+        [input.categoryId]
+      )
+      const category = categoryResult.rows[0]
+      if (!category) {
+        throw new Error('CATEGORY_NOT_FOUND')
+      }
+
+      const sku = await nextSku(client, input.categoryId, category.code)
+
+      const result = await client.query<ProductRow>(
+        `INSERT INTO products (sku, name, brand, category_id, unit, price, stock_quantity, image_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING *`,
+        [
+          sku,
+          input.name,
+          input.brand,
+          input.categoryId,
+          input.unit,
+          input.price,
+          input.stockQuantity,
+          input.imageUrl ?? null,
+        ]
+      )
+
+      await client.query('COMMIT')
+      return mapRow(result.rows[0])
+    } catch (err) {
+      await client.query('ROLLBACK')
+      throw err
+    } finally {
+      client.release()
+    }
+  },
+
+  update: async (id: number, input: iProductInput): Promise<iProduct | null> => {
+    const result = await pool.query<ProductRow>(
+      `UPDATE products
+       SET name = $1, brand = $2, category_id = $3, unit = $4,
+           price = $5, stock_quantity = $6, image_url = $7, updated_at = now()
+       WHERE id = $8
+       RETURNING *`,
+      [
+        input.name,
+        input.brand,
+        input.categoryId,
+        input.unit,
+        input.price,
+        input.stockQuantity,
+        input.imageUrl ?? null,
+        id,
+      ]
+    )
+    return result.rows[0] ? mapRow(result.rows[0]) : null
+  },
+
+  remove: async (id: number): Promise<boolean> => {
+    const result = await pool.query('DELETE FROM products WHERE id = $1', [id])
+    return (result.rowCount ?? 0) > 0
   },
 }
