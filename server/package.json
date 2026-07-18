@@ -5,17 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && cp -r src/templates dist/templates",
     "start": "node dist/server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
+    "handlebars": "^4.7.9",
     "helmet": "^8.3.0",
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
-    "pg": "^8.22.0"
+    "pg": "^8.22.0",
+    "puppeteer": "^25.3.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

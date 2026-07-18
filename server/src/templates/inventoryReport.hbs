@@ -1,0 +1,53 @@
+<!-- Handlebars template สำหรับ render เป็น PDF ผ่าน Puppeteer (report.controller.ts) -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { font-family: 'Tahoma', 'Segoe UI', sans-serif; padding: 24px; color: #222; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .meta { color: #666; font-size: 12px; margin-bottom: 16px; }
+    .summary { display: flex; gap: 24px; margin-bottom: 16px; font-size: 13px; }
+    .summary div { border: 1px solid #ddd; border-radius: 6px; padding: 8px 12px; }
+    .summary .label { color: #666; font-size: 11px; }
+    .summary .value { font-size: 15px; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+    th { background: #f3f3f3; }
+    .text-right { text-align: right; }
+  </style>
+</head>
+<body>
+  <h1>Inventory Report</h1>
+  <div class="meta">สร้างเมื่อ {{formatDate generatedAt}}{{#if dateRangeText}} · ยอดเคลื่อนไหวช่วงวันที่ {{dateRangeText}}{{/if}}</div>
+
+  <div class="summary">
+    <div><div class="label">Stock คงเหลือ</div><div class="value">{{totalStockQuantity}}</div></div>
+    <div><div class="label">สินค้าใกล้หมด</div><div class="value">{{lowStockProductCount}}</div></div>
+    <div><div class="label">รับเข้า (IN)</div><div class="value">+{{totalIn}}</div></div>
+    <div><div class="label">เบิกออก (OUT)</div><div class="value">-{{totalOut}}</div></div>
+    <div><div class="label">ปรับปรุง</div><div class="value">{{totalAdjustment}}</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>SKU</th>
+        <th>Name</th>
+        <th class="text-right">Stock Quantity</th>
+        <th>Low Stock</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each products}}
+      <tr>
+        <td>{{this.sku}}</td>
+        <td>{{this.name}}</td>
+        <td class="text-right">{{this.stockQuantity}}</td>
+        <td>{{#if this.isLowStock}}Yes{{else}}No{{/if}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!-- Handlebars template สำหรับ render เป็น PDF ผ่าน Puppeteer (report.controller.ts) -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { font-family: 'Tahoma', 'Segoe UI', sans-serif; padding: 24px; color: #222; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .meta { color: #666; font-size: 12px; margin-bottom: 16px; }
+    .summary { display: flex; gap: 24px; margin-bottom: 16px; font-size: 13px; }
+    .summary div { border: 1px solid #ddd; border-radius: 6px; padding: 8px 12px; }
+    .summary .label { color: #666; font-size: 11px; }
+    .summary .value { font-size: 15px; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+    th { background: #f3f3f3; }
+    .text-right { text-align: right; }
+  </style>
+</head>
+<body>
+  <h1>Sales Report</h1>
+  <div class="meta">สร้างเมื่อ {{formatDate generatedAt}}{{#if dateRangeText}} · ช่วงวันที่ {{dateRangeText}}{{/if}}</div>
+
+  <div class="summary">
+    <div><div class="label">ยอดขายรวม</div><div class="value">{{formatCurrency totalAmount}} บาท</div></div>
+    <div><div class="label">จำนวน Invoice</div><div class="value">{{invoiceCount}}</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Invoice Number</th>
+        <th>Order Number</th>
+        <th>Status</th>
+        <th class="text-right">Total Amount</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each rows}}
+      <tr>
+        <td>{{this.invoiceNumber}}</td>
+        <td>{{this.orderNumber}}</td>
+        <td>{{this.orderStatus}}</td>
+        <td class="text-right">{{formatCurrency this.totalAmount}}</td>
+        <td>{{formatDate this.createdAt}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</body>
+</html>

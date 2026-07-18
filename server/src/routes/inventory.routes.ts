@@ -10,3 +10,8 @@ inventoryRoutes.get(
   requireRole('Admin', 'Sales', 'Warehouse', 'Viewer'),
   inventoryController.listMovements
 )
+
+// Stock In / Stock Out / Stock Adjustment: Admin, Warehouse เท่านั้น (README ข้อ 5)
+inventoryRoutes.post('/stock-in', requireRole('Admin', 'Warehouse'), inventoryController.stockIn)
+inventoryRoutes.post('/stock-out', requireRole('Admin', 'Warehouse'), inventoryController.stockOut)
+inventoryRoutes.post('/adjustment', requireRole('Admin', 'Warehouse'), inventoryController.adjustment)

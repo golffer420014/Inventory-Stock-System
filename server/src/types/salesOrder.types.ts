@@ -31,3 +31,12 @@ export interface iInvoice {
   totalAmount: number
   createdAt: string
 }
+
+export interface iSalesOrderItemInput {
+  productId: number
+  quantity: number
+}
+
+export interface iSalesOrderInput {
+  items: iSalesOrderItemInput[]
+}

@@ -1,29 +1,18 @@
 import type { PoolClient } from 'pg'
 import { pool } from '@/config/database.js'
+import { Product } from '@/models/product.model.js'
 import type { iProduct, iProductInput } from '@/types/product.types.js'
 
-interface ProductRow {
-  id: number
-  sku: string
-  name: string
-  brand: string
-  category_id: number
-  unit: string
-  price: string
-  stock_quantity: number
-  image_url: string | null
-}
-
-const mapRow = (row: ProductRow): iProduct => ({
-  id: row.id,
-  sku: row.sku,
-  name: row.name,
-  brand: row.brand,
-  categoryId: row.category_id,
-  unit: row.unit,
-  price: Number(row.price),
-  stockQuantity: row.stock_quantity,
-  imageUrl: row.image_url ?? undefined,
+const toApiProduct = (product: Product): iProduct => ({
+  id: product.id,
+  sku: product.sku,
+  name: product.name,
+  brand: product.brand,
+  categoryId: product.categoryId,
+  unit: product.unit,
+  price: product.price,
+  stockQuantity: product.stockQuantity,
+  imageUrl: product.imageUrl ?? undefined,
 })
 
 /**
@@ -47,8 +36,8 @@ const nextSku = async (client: PoolClient, categoryId: number, categoryCode: str
 
 export const productRepository = {
   findAll: async (): Promise<iProduct[]> => {
-    const result = await pool.query<ProductRow>('SELECT * FROM products ORDER BY id')
-    return result.rows.map(mapRow)
+    const products = await Product.findAll({ orderBy: 'id' })
+    return products.map(toApiProduct)
   },
 
   create: async (input: iProductInput): Promise<iProduct> => {
@@ -67,24 +56,22 @@ export const productRepository = {
 
       const sku = await nextSku(client, input.categoryId, category.code)
 
-      const result = await client.query<ProductRow>(
-        `INSERT INTO products (sku, name, brand, category_id, unit, price, stock_quantity, image_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING *`,
-        [
+      const product = await Product.create(
+        {
           sku,
-          input.name,
-          input.brand,
-          input.categoryId,
-          input.unit,
-          input.price,
-          input.stockQuantity,
-          input.imageUrl ?? null,
-        ]
+          name: input.name,
+          brand: input.brand,
+          categoryId: input.categoryId,
+          unit: input.unit,
+          price: input.price,
+          stockQuantity: input.stockQuantity,
+          imageUrl: input.imageUrl ?? null,
+        },
+        client
       )
 
       await client.query('COMMIT')
-      return mapRow(result.rows[0])
+      return toApiProduct(product)
     } catch (err) {
       await client.query('ROLLBACK')
       throw err
@@ -94,28 +81,19 @@ export const productRepository = {
   },
 
   update: async (id: number, input: iProductInput): Promise<iProduct | null> => {
-    const result = await pool.query<ProductRow>(
-      `UPDATE products
-       SET name = $1, brand = $2, category_id = $3, unit = $4,
-           price = $5, stock_quantity = $6, image_url = $7, updated_at = now()
-       WHERE id = $8
-       RETURNING *`,
-      [
-        input.name,
-        input.brand,
-        input.categoryId,
-        input.unit,
-        input.price,
-        input.stockQuantity,
-        input.imageUrl ?? null,
-        id,
-      ]
-    )
-    return result.rows[0] ? mapRow(result.rows[0]) : null
+    const product = await Product.updateById(id, {
+      name: input.name,
+      brand: input.brand,
+      categoryId: input.categoryId,
+      unit: input.unit,
+      price: input.price,
+      stockQuantity: input.stockQuantity,
+      imageUrl: input.imageUrl ?? null,
+    })
+    return product ? toApiProduct(product) : null
   },
 
   remove: async (id: number): Promise<boolean> => {
-    const result = await pool.query('DELETE FROM products WHERE id = $1', [id])
-    return (result.rowCount ?? 0) > 0
+    return Product.deleteById(id)
   },
 }
