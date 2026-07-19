@@ -42,7 +42,7 @@
 
 - ดูข้อมูลสินค้า, ค้นหาสินค้า (ชื่อ/ยี่ห้อ/SKU)
 - ตรวจสอบราคาสินค้าและจำนวน Stock คงเหลือ
-- จัดการหมวดหมู่สินค้า (เพิ่ม/ลบ) — ใช้สร้างเลข SKU อัตโนมัติตาม prefix ของหมวดหมู่
+- จัดการหมวดหมู่สินค้า (เพิ่ม/ลบ) - ใช้สร้างเลข SKU อัตโนมัติตาม prefix ของหมวดหมู่
 - เพิ่ม/แก้ไขสินค้า พร้อมอัปโหลดรูปภาพสินค้า (preview ขนาดเต็ม, คลิกดูรูปจริงได้)
 
 
@@ -111,11 +111,11 @@ Stock Movement
 - ยืนยันคำสั่งขาย (Confirm) → สร้าง Invoice อัตโนมัติ
 - แนบไฟล์หลักฐานการชำระเงิน (ต้องมีอย่างน้อย 1 ไฟล์ก่อนคลังจะดำเนินการตัดสต๊อกได้)
 - คลังดำเนินการตัดสต๊อก (Fulfill) เมื่อมีหลักฐานการชำระเงินแล้วเท่านั้น
-- ยกเลิกคำสั่งขาย (Cancel) — มี dialog ยืนยันก่อนทุกครั้ง
+- ยกเลิกคำสั่งขาย (Cancel) - มี dialog ยืนยันก่อนทุกครั้ง
 - ติดตามสถานะ Order (DRAFT / CONFIRMED / FULFILLED / CANCELLED)
 - ค้นหา Sales Order / Invoice ได้จากเลขที่ออเดอร์หรือชื่อสินค้า
 - ดูตัวอย่าง (Preview) Invoice ได้ทันทีจากหน้า Sales Order โดยไม่ต้องไปหน้า Invoice
-- พิมพ์/ดาวน์โหลด Invoice เป็น PDF รายใบ — จัดรูปแบบเป็นเอกสารทางการ (header ข้อมูลบริษัท, ตาราง, footer พร้อมยอดเงินเป็นตัวอักษรภาษาไทย)
+- พิมพ์/ดาวน์โหลด Invoice เป็น PDF รายใบ - จัดรูปแบบเป็นเอกสารทางการ (header ข้อมูลบริษัท, ตาราง, footer พร้อมยอดเงินเป็นตัวอักษรภาษาไทย)
 
 
 ---
@@ -190,7 +190,7 @@ Stock Movement
 - Sales Report
 - Inventory Report
 - Export Data เป็น CSV
-- Generate/Preview PDF (Report และ Invoice) — จัดรูปแบบเป็นเอกสารทางการ (header ข้อมูลบริษัท, footer พร้อมยอดรวมเป็นตัวอักษรภาษาไทย)
+- Generate/Preview PDF (Report และ Invoice) - จัดรูปแบบเป็นเอกสารทางการ (header ข้อมูลบริษัท, footer พร้อมยอดรวมเป็นตัวอักษรภาษาไทย)
 
 
 ---
@@ -300,11 +300,11 @@ Dashboard / Report
 
 ## Other Technologies
 
-- Puppeteer + Handlebars — generate PDF (Invoice, Sales/Inventory Report)
-- Multer — รับไฟล์อัปโหลด (รูปสินค้า, สลิปหลักฐานการชำระเงิน) เก็บไว้ในดิสก์ของ server
+- Puppeteer + Handlebars - generate PDF (Invoice, Sales/Inventory Report)
+- Multer - รับไฟล์อัปโหลด (รูปสินค้า, สลิปหลักฐานการชำระเงิน) เก็บไว้ในดิสก์ของ server
 - ECharts
-- Server-Sent Events (SSE) — แจ้งเตือนสินค้าใกล้หมดแบบ Real-time
-- Redis — เตรียม config ไว้สำหรับ cache ในอนาคต ยังไม่ได้เชื่อมต่อใช้งานจริง
+- Server-Sent Events (SSE) - แจ้งเตือนสินค้าใกล้หมดแบบ Real-time
+- Redis - เตรียม config ไว้สำหรับ cache ในอนาคต ยังไม่ได้เชื่อมต่อใช้งานจริง
 
 
 ## Deployment
@@ -382,8 +382,8 @@ PostgreSQL
 
 ```
 Inventory-Stock-System/
-├── client/          # Frontend — Vue 3 + TypeScript (ดูรายละเอียดที่ client/README.md)
-└── server/          # Backend — Node.js + Express + TypeScript (ดูรายละเอียดที่ server/README.md)
+├── client/          # Frontend - Vue 3 + TypeScript (ดูรายละเอียดที่ client/README.md)
+└── server/          # Backend - Node.js + Express + TypeScript (ดูรายละเอียดที่ server/README.md)
     └── database/     # migrations/ และ seeds/ ของ PostgreSQL (Supabase)
 ```
 
@@ -432,4 +432,4 @@ MVP ครบ 4 module หลักตาม System Scope แล้ว กำล
 - Accounting Module
 - Payment Gateway Integration / การกระทบยอดชำระเงินแบบเต็มรูปแบบ
 - Audit Log
-- ข้อมูลบริษัท (ชื่อ/ที่อยู่/เลขผู้เสียภาษี/บัญชีธนาคาร) ที่แสดงใน PDF (Invoice, Report) ยังเป็นค่า placeholder — ระบบยังไม่มีที่เก็บข้อมูลบริษัทจริง ต้องแก้ hardcode ในไฟล์ template โดยตรง
+- ข้อมูลบริษัท (ชื่อ/ที่อยู่/เลขผู้เสียภาษี/บัญชีธนาคาร) ที่แสดงใน PDF (Invoice, Report) ยังเป็นค่า placeholder - ระบบยังไม่มีที่เก็บข้อมูลบริษัทจริง ต้องแก้ hardcode ในไฟล์ template โดยตรง
