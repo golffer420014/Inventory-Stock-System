@@ -84,7 +84,7 @@ export const salesOrderController = {
         return
       }
       if (isInvalidStatusError(err)) {
-        res.status(409).json({ message: 'แนบไฟล์ได้เฉพาะคำสั่งขายที่ยังเป็นสถานะร่างเท่านั้น' })
+        res.status(409).json({ message: 'แนบไฟล์ได้เฉพาะคำสั่งขายที่ยืนยันแล้ว (CONFIRMED) เท่านั้น' })
         return
       }
       next(err)
@@ -104,10 +104,6 @@ export const salesOrderController = {
         res.status(409).json({ message: 'ยืนยันได้เฉพาะคำสั่งขายที่ยังเป็นสถานะร่างเท่านั้น' })
         return
       }
-      if (isPaymentRequiredError(err)) {
-        res.status(409).json({ message: 'กรุณาแนบไฟล์หลักฐานการชำระเงินอย่างน้อย 1 ไฟล์ก่อนยืนยันคำสั่งขาย' })
-        return
-      }
       next(err)
     }
   },
@@ -123,6 +119,10 @@ export const salesOrderController = {
       }
       if (isInvalidStatusError(err)) {
         res.status(409).json({ message: 'ดำเนินการได้เฉพาะคำสั่งขายที่ยืนยันแล้วเท่านั้น' })
+        return
+      }
+      if (isPaymentRequiredError(err)) {
+        res.status(409).json({ message: 'กรุณาแนบไฟล์หลักฐานการชำระเงินอย่างน้อย 1 ไฟล์ก่อนดำเนินการตัดสต๊อก' })
         return
       }
       if (isInsufficientStockError(err)) {

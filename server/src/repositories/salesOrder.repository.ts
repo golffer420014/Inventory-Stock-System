@@ -1,6 +1,9 @@
 import type { PoolClient } from 'pg'
 import { pool } from '@/config/database.js'
+import { LOW_STOCK_THRESHOLD } from '@/repositories/dashboard.repository.js'
 import type { iSalesOrder, iSalesOrderItemInput, tSalesOrderStatus } from '@/types/salesOrder.types.js'
+import { emitLowStock } from '@/utils/notificationBus.js'
+import type { iLowStockEvent } from '@/utils/notificationBus.js'
 
 interface SalesOrderRow {
   id: number
@@ -134,14 +137,15 @@ export const salesOrderRepository = {
   },
 
   /**
-   * แนบไฟล์หลักฐานการชำระเงินให้ Sales Order (ทำได้เฉพาะสถานะ DRAFT — ต้องแนบก่อนยืนยันคำสั่งขาย)
+   * แนบไฟล์หลักฐานการชำระเงินให้ Sales Order (ทำได้เฉพาะสถานะ CONFIRMED — ยืนยันคำสั่งขาย/ออก Invoice ก่อน แล้วค่อยจ่ายเงินและแนบหลักฐาน
+   * ต้องแนบก่อนคลังจะดำเนินการตัดสต๊อกได้)
    */
   addPayment: async (id: number, fileUrl: string, fileName: string): Promise<iSalesOrder> => {
     const client = await pool.connect()
     try {
       await client.query('BEGIN')
 
-      await lockOrderForTransition(client, id, ['DRAFT'])
+      await lockOrderForTransition(client, id, ['CONFIRMED'])
 
       await client.query(
         `INSERT INTO sales_order_payments (sales_order_id, file_url, file_name) VALUES ($1, $2, $3)`,
@@ -161,7 +165,7 @@ export const salesOrderRepository = {
 
   /**
    * ยืนยันคำสั่งขาย (DRAFT -> CONFIRMED) แล้วสร้าง Invoice จากยอดรวมของคำสั่งขายนี้อัตโนมัติ
-   * ต้องมีไฟล์หลักฐานการชำระเงินแนบไว้อย่างน้อย 1 ไฟล์ก่อน ถึงจะยืนยันได้ (จำลองขั้นตอนตรวจสอบการชำระเงินจริง)
+   * ยังไม่ต้องมีหลักฐานการชำระเงินตอนนี้ — Invoice คือใบแจ้งหนี้ที่ออกก่อนลูกค้าจะจ่ายเงิน
    */
   confirm: async (id: number): Promise<iSalesOrder> => {
     const client = await pool.connect()
@@ -169,14 +173,6 @@ export const salesOrderRepository = {
       await client.query('BEGIN')
 
       await lockOrderForTransition(client, id, ['DRAFT'])
-
-      const paymentCountResult = await client.query<{ count: string }>(
-        'SELECT COUNT(*) FROM sales_order_payments WHERE sales_order_id = $1',
-        [id]
-      )
-      if (Number(paymentCountResult.rows[0].count) === 0) {
-        throw new Error('PAYMENT_REQUIRED')
-      }
 
       await client.query(`UPDATE sales_orders SET status = 'CONFIRMED', updated_at = now() WHERE id = $1`, [id])
 
@@ -205,6 +201,7 @@ export const salesOrderRepository = {
   /**
    * ให้คลังดำเนินการ (CONFIRMED -> FULFILLED) ตัดสต๊อกสินค้าทุกรายการในคำสั่งขาย
    * และบันทึกเป็นรายการเคลื่อนไหวสต๊อกประเภท OUT ในธุรกรรมเดียวกัน ถ้าสต๊อกสินค้าใดไม่พอจะ rollback ทั้งหมด
+   * ต้องมีไฟล์หลักฐานการชำระเงินแนบไว้อย่างน้อย 1 ไฟล์ก่อน ถึงจะตัดสต๊อกได้ (จำลองขั้นตอนตรวจสอบการชำระเงินก่อนส่งของจริง)
    */
   fulfill: async (id: number): Promise<iSalesOrder> => {
     const client = await pool.connect()
@@ -212,6 +209,14 @@ export const salesOrderRepository = {
       await client.query('BEGIN')
 
       await lockOrderForTransition(client, id, ['CONFIRMED'])
+
+      const paymentCountResult = await client.query<{ count: string }>(
+        'SELECT COUNT(*) FROM sales_order_payments WHERE sales_order_id = $1',
+        [id]
+      )
+      if (Number(paymentCountResult.rows[0].count) === 0) {
+        throw new Error('PAYMENT_REQUIRED')
+      }
 
       const orderNumberResult = await client.query<{ order_number: string }>(
         'SELECT order_number FROM sales_orders WHERE id = $1',
@@ -224,9 +229,11 @@ export const salesOrderRepository = {
         [id]
       )
 
+      const newlyLowStock: iLowStockEvent[] = []
+
       for (const item of itemsResult.rows) {
-        const productResult = await client.query<{ stock_quantity: number }>(
-          'SELECT stock_quantity FROM products WHERE id = $1 FOR UPDATE',
+        const productResult = await client.query<{ stock_quantity: number; sku: string; name: string }>(
+          'SELECT stock_quantity, sku, name FROM products WHERE id = $1 FOR UPDATE',
           [item.product_id]
         )
         const product = productResult.rows[0]
@@ -249,12 +256,20 @@ export const salesOrderRepository = {
            VALUES ($1, 'OUT', $2, $3)`,
           [item.product_id, item.quantity, `Sales Order ${orderNumber}`]
         )
+
+        // แจ้งเตือนแบบ real-time เฉพาะตอน "ตัดข้าม" เกณฑ์สต๊อกต่ำ กันสแปมแจ้งซ้ำ
+        if (product.stock_quantity > LOW_STOCK_THRESHOLD && newQuantity <= LOW_STOCK_THRESHOLD) {
+          newlyLowStock.push({ productId: item.product_id, sku: product.sku, name: product.name, stockQuantity: newQuantity })
+        }
       }
 
       await client.query(`UPDATE sales_orders SET status = 'FULFILLED', updated_at = now() WHERE id = $1`, [id])
 
       const order = await findByIdWithClient(client, id)
       await client.query('COMMIT')
+
+      newlyLowStock.forEach(emitLowStock)
+
       return order as iSalesOrder
     } catch (err) {
       await client.query('ROLLBACK')

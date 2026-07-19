@@ -83,15 +83,19 @@ Product A
 Workflow:
 
 ```
-Sales Order
+Create Sales Order (DRAFT)
 
 ↓
 
-System Generate Invoice
+Confirm → System Generate Invoice (CONFIRMED)
 
 ↓
 
-Warehouse Process
+แนบไฟล์หลักฐานการชำระเงิน (อย่างน้อย 1 ไฟล์)
+
+↓
+
+Warehouse Process → Update Stock (FULFILLED)
 
 ↓
 
@@ -101,11 +105,14 @@ Stock Movement
 
 ความสามารถ:
 
-- สร้าง Sales Order
-- เพิ่มรายการสินค้า
+- สร้าง Sales Order ผ่าน Dialog พร้อมเพิ่มรายการสินค้าได้หลายบรรทัด
 - คำนวณยอดรวมอัตโนมัติ
-- สร้าง Invoice อัตโนมัติ
-- ติดตามสถานะ Order
+- ยืนยันคำสั่งขาย (Confirm) → สร้าง Invoice อัตโนมัติ
+- แนบไฟล์หลักฐานการชำระเงิน (ต้องมีอย่างน้อย 1 ไฟล์ก่อนคลังจะดำเนินการตัดสต๊อกได้)
+- คลังดำเนินการตัดสต๊อก (Fulfill) เมื่อมีหลักฐานการชำระเงินแล้วเท่านั้น
+- ยกเลิกคำสั่งขาย (Cancel)
+- ติดตามสถานะ Order (DRAFT / CONFIRMED / FULFILLED / CANCELLED)
+- พิมพ์/ดาวน์โหลด Invoice เป็น PDF รายใบ
 
 
 ---
@@ -117,11 +124,12 @@ Stock Movement
 
 ความสามารถ:
 
-- ยอดขาย
-- จำนวนสินค้า
-- Stock คงเหลือ
-- สินค้าใกล้หมด
-- รายงานข้อมูล
+- ยอดขาย, จำนวนสินค้า, Stock คงเหลือ, สินค้าใกล้หมด (แสดงเป็น KPI Card)
+- กราฟ Stock คงเหลือแยกตามสินค้า และกราฟสรุปการเคลื่อนไหวสต๊อก (ECharts)
+- รายงานยอดขาย (Sales Report) และรายงานคลังสินค้า (Inventory Report) พร้อม filter ช่วงวันที่
+- Export ข้อมูลเป็น CSV
+- สร้าง/พรีวิว Report เป็น PDF
+- แจ้งเตือนสินค้าใกล้หมดแบบ Real-time (Server-Sent Events) ทันทีที่สต๊อกตัดข้ามเกณฑ์ต่ำ
 
 
 ---
@@ -131,22 +139,23 @@ Stock Movement
 
 ## Sales Management
 
-- สร้าง Sales Order
-- เพิ่มรายการสินค้า
-- คำนวณยอดรวม
-- Generate Invoice อัตโนมัติ
+- สร้าง Sales Order ผ่าน Dialog
+- เพิ่มรายการสินค้าได้หลายบรรทัด
+- คำนวณยอดรวมอัตโนมัติ
+- Generate Invoice อัตโนมัติตอนยืนยันคำสั่งขาย
+- แนบไฟล์หลักฐานการชำระเงิน (บังคับก่อนตัดสต๊อก)
 - ตรวจสอบสถานะ Order
+- พิมพ์/ดาวน์โหลด Invoice เป็น PDF
 
 
 ---
 
 ## Inventory Management
 
-- Stock In
-- Stock Out
-- Stock Adjustment
+- Stock In / Stock Out / Stock Adjustment (Dialog เดียว)
 - Inventory Movement History
 - ตรวจสอบ Stock คงเหลือ
+- แจ้งเตือนสินค้าใกล้หมดแบบ Real-time (Toast Notification)
 
 
 ---
@@ -161,11 +170,11 @@ Stock Movement
 
 ## Reporting
 
-- Dashboard
+- Dashboard พร้อม KPI Card และกราฟสรุปข้อมูล
 - Sales Report
 - Inventory Report
-- Export Data
-- Generate PDF
+- Export Data เป็น CSV
+- Generate/Preview PDF (Report และ Invoice)
 
 
 ---
@@ -183,12 +192,15 @@ Stock Movement
 | Dashboard | ✅ | ✅ | ✅ | ✅ |
 | ดูสินค้า | ✅ | ✅ | ✅ | ✅ |
 | จัดการสินค้า | ✅ | ❌ | ❌ | ❌ |
-| สร้าง Sales Order | ✅ | ✅ | ❌ | ❌ |
-| ดู Invoice | ✅ | ✅ | 👁️ | 👁️ |
+| สร้าง / ยืนยัน / ยกเลิก Sales Order | ✅ | ✅ | ❌ | ❌ |
+| แนบไฟล์หลักฐานการชำระเงิน | ✅ | ✅ | ❌ | ❌ |
+| ดำเนินการตัดสต๊อก (Fulfill) | ✅ | ❌ | ✅ | ❌ |
+| ดู Invoice / พิมพ์ PDF | ✅ | ✅ | 👁️ | 👁️ |
 | Stock In | ✅ | ❌ | ✅ | ❌ |
 | Stock Out | ✅ | ❌ | ✅ | ❌ |
 | Stock Adjustment | ✅ | ❌ | ✅ | ❌ |
 | Inventory Movement | ✅ | 👁️ | ✅ | 👁️ |
+| แจ้งเตือนสินค้าใกล้หมด (Real-time) | ✅ | ✅ | ✅ | ✅ |
 | Report | ✅ | ✅ | ✅ | ✅ |
 
 
@@ -212,23 +224,31 @@ Sales
 
 ↓
 
-Create Sales Order
+Create Sales Order (DRAFT)
 
 ↓
 
-Generate Invoice
+Confirm → Generate Invoice (CONFIRMED)
 
 ↓
 
-Warehouse Process
+แนบไฟล์หลักฐานการชำระเงิน
 
 ↓
 
-Update Stock
+Warehouse Process (ตรวจสอบว่ามีหลักฐานการชำระเงินแล้ว)
+
+↓
+
+Update Stock (FULFILLED)
 
 ↓
 
 Create Inventory Movement
+
+↓
+
+ตัดข้ามเกณฑ์สต๊อกต่ำ? → แจ้งเตือน Real-time
 
 ↓
 
@@ -268,6 +288,8 @@ Dashboard / Report
 - Redis
 - Puppeteer
 - Handlebars
+- ECharts
+- Server-Sent Events (SSE) — แจ้งเตือนสินค้าใกล้หมดแบบ Real-time
 
 
 ## Deployment
@@ -293,9 +315,9 @@ SalesOrder
 
 SalesOrderItem
 
-Invoice
+SalesOrderPayment
 
-InvoiceItem
+Invoice
 
 InventoryMovement
 ```
@@ -368,22 +390,27 @@ inventory-system
 # 11. Project Status
 
 
-กำลังพัฒนา
+MVP ครบ 4 module หลักตาม System Scope แล้ว กำลังขัดเกลาและทดสอบเพิ่มเติม
 
 
 ## Completed
 
-- Project Planning
-- System Scope
-- Business Workflow Design
-- Role Permission Design
+- Project Planning / System Scope / Business Workflow Design / Role Permission Design
+- Database Design (PostgreSQL, ผ่าน Supabase)
+- Backend API (Node.js + Express + TypeScript) ครบทั้ง 4 module
+- Frontend (Vue 3 + TypeScript + Pinia) ครบทั้ง 4 module
+- Sales Order & Invoice workflow แบบเต็ม (Create → Confirm → แนบไฟล์การชำระเงิน → Fulfill → ตัดสต๊อก)
+- Invoice PDF generation รายใบ
+- Dashboard พร้อมกราฟ (ECharts) และ KPI Card
+- Sales/Inventory Report พร้อม Export CSV และ PDF
+- แจ้งเตือนสินค้าใกล้หมดแบบ Real-time (Server-Sent Events)
 
 
 ## In Progress
 
-- Database Design
-- Backend API Development
-- Frontend Development
+- ทดสอบสิทธิ์การใช้งานตาม Role ให้ครบทุก Role (ทดสอบหลักด้วย Admin เป็นส่วนใหญ่)
+- ปรับปรุง UI/UX เพิ่มเติม (Product/Category management)
+- Commit และจัดระเบียบ git history
 
 
 ---
@@ -391,10 +418,9 @@ inventory-system
 # 12. Future Improvements
 
 
-- Authentication System
+- Authentication System (ระบบ Login จริง แทน Demo Role)
 - Purchase Order
 - Supplier Management
 - Accounting Module
-- Payment Management
-- Notification System
+- Payment Gateway Integration / การกระทบยอดชำระเงินแบบเต็มรูปแบบ
 - Audit Log

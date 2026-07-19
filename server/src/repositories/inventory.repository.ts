@@ -1,6 +1,8 @@
 import { pool } from '@/config/database.js'
+import { LOW_STOCK_THRESHOLD } from '@/repositories/dashboard.repository.js'
 import { InventoryMovement } from '@/models/inventoryMovement.model.js'
 import type { iInventoryMovement, tInventoryMovementType } from '@/types/inventory.types.js'
+import { emitLowStock } from '@/utils/notificationBus.js'
 
 const toApiMovement = (movement: InventoryMovement): iInventoryMovement => ({
   id: movement.id,
@@ -27,8 +29,8 @@ const applyMovement = async (
   try {
     await client.query('BEGIN')
 
-    const productResult = await client.query<{ stock_quantity: number }>(
-      'SELECT stock_quantity FROM products WHERE id = $1 FOR UPDATE',
+    const productResult = await client.query<{ stock_quantity: number; sku: string; name: string }>(
+      'SELECT stock_quantity, sku, name FROM products WHERE id = $1 FOR UPDATE',
       [productId]
     )
     const product = productResult.rows[0]
@@ -49,6 +51,12 @@ const applyMovement = async (
     const movement = await InventoryMovement.create({ productId, type, quantity, note: note ?? null }, client)
 
     await client.query('COMMIT')
+
+    // แจ้งเตือนแบบ real-time เฉพาะตอน "ตัดข้าม" เกณฑ์สต๊อกต่ำ (ก่อนหน้ายังไม่ต่ำ แต่ตอนนี้ต่ำแล้ว) กันสแปมแจ้งซ้ำ
+    if (product.stock_quantity > LOW_STOCK_THRESHOLD && newQuantity <= LOW_STOCK_THRESHOLD) {
+      emitLowStock({ productId, sku: product.sku, name: product.name, stockQuantity: newQuantity })
+    }
+
     return toApiMovement(movement)
   } catch (err) {
     await client.query('ROLLBACK')
