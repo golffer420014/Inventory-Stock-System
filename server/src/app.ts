@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import cors from 'cors'
-import express from 'express'
+import express, { type RequestHandler } from 'express'
 import * as helmetModule from 'helmet'
 import morgan from 'morgan'
 import { env } from '@/config/env.js'
@@ -14,8 +14,13 @@ const publicDir = path.join(__dirname, '..', 'public')
 
 export const app = express()
 
+// helmet's type declarations resolve inconsistently across environments (NodeNext dual-package
+// resolution), sometimes typing the default export as non-callable even though it is callable
+// at runtime — cast through unknown to decouple from whichever declaration file gets picked.
+const helmet = helmetModule.default as unknown as (options?: Record<string, unknown>) => RequestHandler
+
 // crossOriginResourcePolicy: cross-origin เพราะ client (5173) ต้องโหลดรูปจาก server (4000) คนละ origin
-app.use(helmetModule.default({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
 app.use(cors({ origin: env.clientOrigin }))
 if (env.nodeEnv !== 'test') {
   app.use(morgan('dev'))
