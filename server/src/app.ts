@@ -2,7 +2,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import cors from 'cors'
 import express from 'express'
-import helmet from 'helmet'
+import * as helmetModule from 'helmet'
 import morgan from 'morgan'
 import { env } from '@/config/env.js'
 import { errorHandlerMiddleware } from '@/middlewares/errorHandler.middleware.js'
@@ -15,7 +15,7 @@ const publicDir = path.join(__dirname, '..', 'public')
 export const app = express()
 
 // crossOriginResourcePolicy: cross-origin เพราะ client (5173) ต้องโหลดรูปจาก server (4000) คนละ origin
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
+app.use(helmetModule.default({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
 app.use(cors({ origin: env.clientOrigin }))
 if (env.nodeEnv !== 'test') {
   app.use(morgan('dev'))
