@@ -40,10 +40,10 @@
 
 ความสามารถ:
 
-- ดูข้อมูลสินค้า
-- ค้นหาสินค้า
-- ตรวจสอบราคาสินค้า
-- ตรวจสอบจำนวน Stock คงเหลือ
+- ดูข้อมูลสินค้า, ค้นหาสินค้า (ชื่อ/ยี่ห้อ/SKU)
+- ตรวจสอบราคาสินค้าและจำนวน Stock คงเหลือ
+- จัดการหมวดหมู่สินค้า (เพิ่ม/ลบ) — ใช้สร้างเลข SKU อัตโนมัติตาม prefix ของหมวดหมู่
+- เพิ่ม/แก้ไขสินค้า พร้อมอัปโหลดรูปภาพสินค้า (preview ขนาดเต็ม, คลิกดูรูปจริงได้)
 
 
 ---
@@ -105,13 +105,14 @@ Stock Movement
 
 ความสามารถ:
 
-- สร้าง Sales Order ผ่าน Dialog พร้อมเพิ่มรายการสินค้าได้หลายบรรทัด
+- สร้าง Sales Order ผ่าน Dialog พร้อมเพิ่มรายการสินค้าได้หลายบรรทัด (กันเลือกสินค้าซ้ำกันคนละบรรทัดในออเดอร์เดียว)
 - คำนวณยอดรวมอัตโนมัติ
 - ยืนยันคำสั่งขาย (Confirm) → สร้าง Invoice อัตโนมัติ
 - แนบไฟล์หลักฐานการชำระเงิน (ต้องมีอย่างน้อย 1 ไฟล์ก่อนคลังจะดำเนินการตัดสต๊อกได้)
 - คลังดำเนินการตัดสต๊อก (Fulfill) เมื่อมีหลักฐานการชำระเงินแล้วเท่านั้น
-- ยกเลิกคำสั่งขาย (Cancel)
+- ยกเลิกคำสั่งขาย (Cancel) — มี dialog ยืนยันก่อนทุกครั้ง
 - ติดตามสถานะ Order (DRAFT / CONFIRMED / FULFILLED / CANCELLED)
+- ค้นหา Sales Order / Invoice ได้จากเลขที่ออเดอร์หรือชื่อสินค้า
 - พิมพ์/ดาวน์โหลด Invoice เป็น PDF รายใบ
 
 
@@ -153,7 +154,7 @@ Stock Movement
 ## Inventory Management
 
 - Stock In / Stock Out / Stock Adjustment (Dialog เดียว)
-- Inventory Movement History
+- Inventory Movement History พร้อมค้นหาจากชื่อสินค้า/SKU/หมายเหตุ
 - ตรวจสอบ Stock คงเหลือ
 - แจ้งเตือนสินค้าใกล้หมดแบบ Real-time (Toast Notification)
 
@@ -164,6 +165,18 @@ Stock Movement
 
 - แสดงข้อมูลสินค้า
 - ค้นหาและ Filter สินค้า
+- อัปโหลด/เปลี่ยน/ลบรูปภาพสินค้า พร้อม preview
+
+
+---
+
+## Usability
+
+- หน้าแรก (Home) แนะนำขั้นตอนการใช้งานระบบทั้งหมดแบบ step-by-step ให้ผู้ใช้ใหม่เริ่มได้ทันที
+- Toast แจ้งผลลัพธ์ทุกครั้งที่บันทึก/ยืนยัน/ลบข้อมูลสำเร็จ ไม่ปิดหน้าต่างเงียบ ๆ
+- Dialog ยืนยันก่อน action ที่ทำลายข้อมูล (ลบสินค้า/หมวดหมู่, ยกเลิกคำสั่งขาย) แทน browser confirm
+- แจ้ง error เป็นรายช่องในฟอร์ม (ไม่ใช่ข้อความรวมช่องเดียว)
+- Dialog รองรับ keyboard เต็มรูปแบบ (focus trap, Escape ปิดได้, คืน focus ให้ปุ่มเดิม)
 
 
 ---
@@ -279,23 +292,22 @@ Dashboard / Report
 
 ## Database
 
-- PostgreSQL
-- NeonDB / Supabase
+- PostgreSQL ผ่าน Supabase (ต่อผ่าน `pg` โดยตรง ไม่ใช้ ORM)
 
 
 ## Other Technologies
 
-- Redis
-- Puppeteer
-- Handlebars
+- Puppeteer + Handlebars — generate PDF (Invoice, Sales/Inventory Report)
+- Multer — รับไฟล์อัปโหลด (รูปสินค้า, สลิปหลักฐานการชำระเงิน) เก็บไว้ในดิสก์ของ server
 - ECharts
 - Server-Sent Events (SSE) — แจ้งเตือนสินค้าใกล้หมดแบบ Real-time
+- Redis — เตรียม config ไว้สำหรับ cache ในอนาคต ยังไม่ได้เชื่อมต่อใช้งานจริง
 
 
 ## Deployment
 
 - Vercel (Frontend)
-- Cloud Database (NeonDB / Supabase)
+- Supabase (Database)
 
 
 ---
@@ -357,13 +369,7 @@ Database
 
 PostgreSQL
 
-(NeonDB / Supabase)
-
- |
-
- |
-
-Redis Cache
+(Supabase)
 ```
 
 
@@ -371,17 +377,11 @@ Redis Cache
 
 # 10. Project Structure
 
-
 ```
-inventory-system
-
-├── frontend
-
-├── backend
-
-├── database
-
-└── docs
+Inventory-Stock-System/
+├── client/          # Frontend — Vue 3 + TypeScript (ดูรายละเอียดที่ client/README.md)
+└── server/          # Backend — Node.js + Express + TypeScript (ดูรายละเอียดที่ server/README.md)
+    └── database/     # migrations/ และ seeds/ ของ PostgreSQL (Supabase)
 ```
 
 
@@ -401,15 +401,17 @@ MVP ครบ 4 module หลักตาม System Scope แล้ว กำล
 - Frontend (Vue 3 + TypeScript + Pinia) ครบทั้ง 4 module
 - Sales Order & Invoice workflow แบบเต็ม (Create → Confirm → แนบไฟล์การชำระเงิน → Fulfill → ตัดสต๊อก)
 - Invoice PDF generation รายใบ
+- Product/Category management พร้อมอัปโหลดรูปภาพสินค้า
 - Dashboard พร้อมกราฟ (ECharts) และ KPI Card
 - Sales/Inventory Report พร้อม Export CSV และ PDF
 - แจ้งเตือนสินค้าใกล้หมดแบบ Real-time (Server-Sent Events)
+- หน้าแรก (Home) แนะนำ workflow การใช้งานแบบ step-by-step สำหรับผู้ใช้ใหม่
+- Usability pass ทั่วระบบ: toast แจ้งผลลัพธ์ทุก action, confirm dialog แทน browser confirm, ค้นหาในลิสต์ยาว, validation รายช่องในฟอร์ม, dialog รองรับ keyboard เต็มรูปแบบ (focus trap)
 
 
 ## In Progress
 
 - ทดสอบสิทธิ์การใช้งานตาม Role ให้ครบทุก Role (ทดสอบหลักด้วย Admin เป็นส่วนใหญ่)
-- ปรับปรุง UI/UX เพิ่มเติม (Product/Category management)
 - Commit และจัดระเบียบ git history
 
 

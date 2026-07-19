@@ -229,7 +229,7 @@ export const salesOrderRepository = {
         [id]
       )
 
-      const newlyLowStock: iLowStockEvent[] = []
+      const lowStockEvents: iLowStockEvent[] = []
 
       for (const item of itemsResult.rows) {
         const productResult = await client.query<{ stock_quantity: number; sku: string; name: string }>(
@@ -257,9 +257,9 @@ export const salesOrderRepository = {
           [item.product_id, item.quantity, `Sales Order ${orderNumber}`]
         )
 
-        // แจ้งเตือนแบบ real-time เฉพาะตอน "ตัดข้าม" เกณฑ์สต๊อกต่ำ กันสแปมแจ้งซ้ำ
-        if (product.stock_quantity > LOW_STOCK_THRESHOLD && newQuantity <= LOW_STOCK_THRESHOLD) {
-          newlyLowStock.push({ productId: item.product_id, sku: product.sku, name: product.name, stockQuantity: newQuantity })
+        // แจ้งเตือนแบบ real-time ทุกครั้งที่ตัดสต๊อกแล้วผลลัพธ์ยังต่ำกว่าเกณฑ์ ไม่ใช่แค่ตอนตัดข้ามเกณฑ์ครั้งแรก
+        if (newQuantity <= LOW_STOCK_THRESHOLD) {
+          lowStockEvents.push({ productId: item.product_id, sku: product.sku, name: product.name, stockQuantity: newQuantity })
         }
       }
 
@@ -268,7 +268,7 @@ export const salesOrderRepository = {
       const order = await findByIdWithClient(client, id)
       await client.query('COMMIT')
 
-      newlyLowStock.forEach(emitLowStock)
+      lowStockEvents.forEach(emitLowStock)
 
       return order as iSalesOrder
     } catch (err) {

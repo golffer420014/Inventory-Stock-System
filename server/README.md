@@ -11,9 +11,11 @@ Backend API ของระบบ Inventory & Stock System (Mini ERP) พัฒ�
 - Node.js
 - Express
 - TypeScript (รันตรงด้วย `tsx` ระหว่าง dev)
-- PostgreSQL (วางแผนต่อผ่าน pg / Knex / Prisma — ยังไม่ได้เลือก client)
-- Redis (สำหรับ cache — ยังไม่ได้ต่อ client จริง)
-- Handlebars (สร้าง template เอกสาร เช่น Invoice)
+- PostgreSQL ผ่าน [`pg`](https://node-postgres.com/) (`Pool`) — เชื่อมต่อ Supabase Postgres โดยตรง ไม่ใช้ ORM
+- Puppeteer (generate PDF จาก HTML — ใช้ร่วมกับ Handlebars template)
+- Handlebars (สร้าง template เอกสาร เช่น Invoice, Report)
+- Multer (รับไฟล์อัปโหลด — เก็บลงดิสก์ในเครื่อง server)
+- Redis (เตรียม config ไว้สำหรับ cache ในอนาคต — ยังไม่ได้ต่อ client จริง มีแค่ `REDIS_URL` เก็บไว้)
 
 ## รูปแบบโครงสร้าง (Structure Pattern)
 
@@ -40,34 +42,48 @@ server/
     ├── routes/             # กำหนดเส้นทาง API และผูกกับ controller + middleware (เช่น requireRole)
     │   ├── index.ts          # รวมทุก route ย่อยเข้า apiRouter หลัก (mount ที่ /api)
     │   ├── product.routes.ts
+    │   ├── category.routes.ts
+    │   ├── upload.routes.ts     # POST /api/uploads — รับไฟล์รูปสินค้า/หลักฐานการชำระเงิน
     │   ├── inventory.routes.ts
     │   ├── salesOrder.routes.ts
     │   ├── invoice.routes.ts
-    │   └── dashboard.routes.ts
+    │   ├── dashboard.routes.ts
+    │   ├── report.routes.ts
+    │   └── notification.routes.ts # GET /api/notifications/stream — SSE แจ้งเตือนสินค้าใกล้หมด
     │
     ├── controllers/        # รับ request/response โดยตรง เรียก service แล้วส่งผลลัพธ์กลับเป็น JSON
     │   ├── product.controller.ts
+    │   ├── category.controller.ts
+    │   ├── upload.controller.ts
     │   ├── inventory.controller.ts
     │   ├── salesOrder.controller.ts
     │   ├── invoice.controller.ts
-    │   └── dashboard.controller.ts
+    │   ├── dashboard.controller.ts
+    │   ├── report.controller.ts
+    │   └── notification.controller.ts
     │
     ├── services/           # Business logic หลักของระบบ เช่น คำนวณยอดขาย, สร้าง Invoice, อัปเดต Stock, workflow ต่าง ๆ
     │   ├── product.service.ts
+    │   ├── category.service.ts
     │   ├── inventory.service.ts
     │   ├── salesOrder.service.ts
     │   ├── invoice.service.ts
-    │   └── dashboard.service.ts
+    │   ├── dashboard.service.ts
+    │   └── report.service.ts    # คำนวณ Sales/Inventory Report + สร้างไฟล์ CSV และ PDF (ผ่าน Puppeteer)
     │
     ├── repositories/       # ชั้นเข้าถึงข้อมูล (data access) คุยกับฐานข้อมูลโดยตรง ไม่มี business logic
     │   ├── product.repository.ts
+    │   ├── category.repository.ts
     │   ├── inventory.repository.ts
     │   ├── salesOrder.repository.ts
-    │   └── invoice.repository.ts
+    │   ├── invoice.repository.ts
+    │   ├── dashboard.repository.ts
+    │   └── report.repository.ts
     │
     ├── middlewares/        # Express middleware
     │   ├── auth.middleware.ts        # Demo auth — อ่าน role จาก header `x-demo-role` (ยังไม่มีระบบ login จริง)
     │   ├── role.middleware.ts        # requireRole(...roles) ตรวจสิทธิ์ตาม Permission Matrix ก่อนเข้าถึง route
+    │   ├── upload.middleware.ts      # Multer — เก็บไฟล์อัปโหลด (รูปสินค้า/สลิป) ลง public/uploads
     │   └── errorHandler.middleware.ts # ดักจับ error กลางของแอปแล้วตอบกลับเป็น response ที่เหมาะสม
     │
     ├── config/              # ค่าตั้งต้นของระบบ อ่านจาก environment variable
@@ -85,6 +101,7 @@ server/
     │   ├── inventory.types.ts
     │   ├── salesOrder.types.ts
     │   ├── dashboard.types.ts
+    │   ├── report.types.ts
     │   └── role.types.ts
     │
     ├── utils/               # Utility function ที่ใช้ร่วมกันหลาย layer/domain
@@ -104,19 +121,32 @@ npm run start     # รัน production build จาก dist/server.js
 
 ## Environment
 
-Copy `.env.example` เป็น `.env` แล้วปรับค่าตามการใช้งาน:
+Copy `.env.example` เป็น `.env` แล้วปรับค่าตามการใช้งาน — โปรเจกต์นี้ต่อกับ **Supabase Postgres** โดยตรง (ไม่มี local DB setup):
 
 ```
 PORT=4000
 CLIENT_ORIGIN=http://localhost:5173
-DATABASE_URL=postgresql://user:password@localhost:5432/inventory_stock_system
-REDIS_URL=redis://localhost:6379
+
+# Supabase Dashboard > Project Settings > Database > Connection pooling (Session mode)
+DATABASE_URL=postgresql://postgres.<ref>:[YOUR-PASSWORD]@aws-0-<region>.pooler.supabase.com:5432/postgres
+
+REDIS_URL=redis://localhost:6379   # เก็บไว้เผื่ออนาคต ยังไม่ได้ใช้งานจริง
+
+# Supabase Dashboard > Settings > API — เผื่อใช้ตอนต่อ authentication จริงในอนาคต
+SUPABASE_URL=https://<ref>.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxxxxxxxxxxxxxxxxxxxxxx
+SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxxxxxxxxxx
+SUPABASE_JWKS_URL=https://<ref>.supabase.co/auth/v1/.well-known/jwks.json
 ```
 
 ## API
 
-ทุก endpoint ถูก mount อยู่ใต้ `/api` (เช่น `/api/products`, `/api/inventory`, `/api/sales-orders`, `/api/invoices`, `/api/dashboard`)
+ทุก endpoint ถูก mount อยู่ใต้ `/api` (เช่น `/api/products`, `/api/categories`, `/api/uploads`, `/api/inventory`, `/api/sales-orders`, `/api/invoices`, `/api/dashboard`, `/api/reports`, `/api/notifications`)
 
 มี `GET /health` สำหรับตรวจสอบสถานะ server
+
+ไฟล์ที่อัปโหลดผ่าน `POST /api/uploads` (รูปสินค้า, สลิปหลักฐานการชำระเงิน) ถูกเก็บไว้ในดิสก์ของ server เอง (`server/public/uploads`, ผ่าน Multer) แล้ว serve กลับผ่าน `express.static` ที่ path `/uploads/<filename>` — ไม่ได้ใช้ Supabase Storage
+
+`GET /api/notifications/stream` เปิด Server-Sent Events connection ค้างไว้ ใช้ push แจ้งเตือนสินค้าใกล้หมดแบบ real-time ไปที่ client (ไม่ต้อง poll)
 
 Request ต้องส่ง header `x-demo-role` เพื่อจำลอง role ของผู้ใช้งาน (ระบบยังไม่มี authentication จริง) โดย role และสิทธิ์การเข้าถึงแต่ละ endpoint เป็นไปตาม Permission Matrix ใน [README หลักของโปรเจกต์](../README.md#5-demo-role--permission-matrix)

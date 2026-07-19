@@ -52,8 +52,8 @@ const applyMovement = async (
 
     await client.query('COMMIT')
 
-    // แจ้งเตือนแบบ real-time เฉพาะตอน "ตัดข้าม" เกณฑ์สต๊อกต่ำ (ก่อนหน้ายังไม่ต่ำ แต่ตอนนี้ต่ำแล้ว) กันสแปมแจ้งซ้ำ
-    if (product.stock_quantity > LOW_STOCK_THRESHOLD && newQuantity <= LOW_STOCK_THRESHOLD) {
+    // แจ้งเตือนแบบ real-time ทุกครั้งที่ "ตัด" สต๊อก (delta ติดลบ) แล้วผลลัพธ์ยังต่ำกว่าเกณฑ์ ไม่ใช่แค่ตอนตัดข้ามเกณฑ์ครั้งแรก
+    if (delta < 0 && newQuantity <= LOW_STOCK_THRESHOLD) {
       emitLowStock({ productId, sku: product.sku, name: product.name, stockQuantity: newQuantity })
     }
 
