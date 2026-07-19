@@ -29,6 +29,10 @@ app.use(express.json())
 app.use(express.static(publicDir))
 app.use(authMiddleware)
 
+app.get('/', (_req, res) => {
+  res.json({ message: 'Hello World!' })
+})
+
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' })
 })
