@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import Handlebars from 'handlebars'
 import puppeteer, { type Browser } from 'puppeteer'
+import { toThaiBahtText } from './thaiBahtText.util.js'
 
 /** ใช้ในเทมเพลตเป็น {{formatDate someDate}} จัดรูปแบบวันเวลาเป็นภาษาไทย เช่น "18 ก.ค. 2569 21:08" */
 Handlebars.registerHelper('formatDate', (value: string | Date) => {
@@ -11,6 +12,11 @@ Handlebars.registerHelper('formatDate', (value: string | Date) => {
 /** ใช้ในเทมเพลตเป็น {{formatCurrency totalAmount}} ใส่ comma คั่นหลักพันตามธรรมเนียมไทย */
 Handlebars.registerHelper('formatCurrency', (value: number) => {
   return Number(value).toLocaleString('th-TH')
+})
+
+/** ใช้ในเทมเพลตเป็น {{formatBahtText totalAmount}} แปลงยอดเงินเป็นคำอ่านภาษาไทยสำหรับช่อง "จำนวนเงินเป็นตัวอักษร" */
+Handlebars.registerHelper('formatBahtText', (value: number) => {
+  return toThaiBahtText(Number(value))
 })
 
 const TEMPLATES_DIR = fileURLToPath(new URL('../templates', import.meta.url))
@@ -51,9 +57,8 @@ export const renderPdf = async (template: string, data: Record<string, unknown>)
   try {
     await page.setContent(html, { waitUntil: 'load' })
     const pdf = await page.pdf({
-      format: 'A4',
       printBackground: true,
-      margin: { top: '16mm', bottom: '16mm', left: '12mm', right: '12mm' },
+      preferCSSPageSize: true,
     })
     return Buffer.from(pdf)
   } finally {

@@ -106,6 +106,7 @@ Stock Movement
 ความสามารถ:
 
 - สร้าง Sales Order ผ่าน Dialog พร้อมเพิ่มรายการสินค้าได้หลายบรรทัด (กันเลือกสินค้าซ้ำกันคนละบรรทัดในออเดอร์เดียว)
+- แสดงรูปสินค้าและจำนวนคงเหลือในสต๊อกประกอบการเลือกสินค้าแต่ละบรรทัด
 - คำนวณยอดรวมอัตโนมัติ
 - ยืนยันคำสั่งขาย (Confirm) → สร้าง Invoice อัตโนมัติ
 - แนบไฟล์หลักฐานการชำระเงิน (ต้องมีอย่างน้อย 1 ไฟล์ก่อนคลังจะดำเนินการตัดสต๊อกได้)
@@ -113,7 +114,8 @@ Stock Movement
 - ยกเลิกคำสั่งขาย (Cancel) — มี dialog ยืนยันก่อนทุกครั้ง
 - ติดตามสถานะ Order (DRAFT / CONFIRMED / FULFILLED / CANCELLED)
 - ค้นหา Sales Order / Invoice ได้จากเลขที่ออเดอร์หรือชื่อสินค้า
-- พิมพ์/ดาวน์โหลด Invoice เป็น PDF รายใบ
+- ดูตัวอย่าง (Preview) Invoice ได้ทันทีจากหน้า Sales Order โดยไม่ต้องไปหน้า Invoice
+- พิมพ์/ดาวน์โหลด Invoice เป็น PDF รายใบ — จัดรูปแบบเป็นเอกสารทางการ (header ข้อมูลบริษัท, ตาราง, footer พร้อมยอดเงินเป็นตัวอักษรภาษาไทย)
 
 
 ---
@@ -141,11 +143,12 @@ Stock Movement
 ## Sales Management
 
 - สร้าง Sales Order ผ่าน Dialog
-- เพิ่มรายการสินค้าได้หลายบรรทัด
+- เพิ่มรายการสินค้าได้หลายบรรทัด พร้อมแสดงรูปสินค้า/สต๊อกคงเหลือประกอบการเลือก
 - คำนวณยอดรวมอัตโนมัติ
 - Generate Invoice อัตโนมัติตอนยืนยันคำสั่งขาย
 - แนบไฟล์หลักฐานการชำระเงิน (บังคับก่อนตัดสต๊อก)
 - ตรวจสอบสถานะ Order
+- Preview Invoice ได้จากหน้า Sales Order โดยตรง
 - พิมพ์/ดาวน์โหลด Invoice เป็น PDF
 
 
@@ -187,7 +190,7 @@ Stock Movement
 - Sales Report
 - Inventory Report
 - Export Data เป็น CSV
-- Generate/Preview PDF (Report และ Invoice)
+- Generate/Preview PDF (Report และ Invoice) — จัดรูปแบบเป็นเอกสารทางการ (header ข้อมูลบริษัท, footer พร้อมยอดรวมเป็นตัวอักษรภาษาไทย)
 
 
 ---
@@ -407,6 +410,9 @@ MVP ครบ 4 module หลักตาม System Scope แล้ว กำล
 - แจ้งเตือนสินค้าใกล้หมดแบบ Real-time (Server-Sent Events)
 - หน้าแรก (Home) แนะนำ workflow การใช้งานแบบ step-by-step สำหรับผู้ใช้ใหม่
 - Usability pass ทั่วระบบ: toast แจ้งผลลัพธ์ทุก action, confirm dialog แทน browser confirm, ค้นหาในลิสต์ยาว, validation รายช่องในฟอร์ม, dialog รองรับ keyboard เต็มรูปแบบ (focus trap)
+- ปรับปรุง UX หน้า Sales Order: แสดงรูปสินค้า/สต๊อกคงเหลือตอนเลือกสินค้าในฟอร์ม, ปุ่ม Preview Invoice บนหน้า Sales Order โดยตรง (ไม่ต้องสลับไปหน้า Invoice)
+- แก้ dropdown ของ Combobox โดน modal ตัดขอบ (teleport ไป render ที่ body แทน)
+- จัดรูปแบบ PDF (Invoice, Sales Report, Inventory Report) ใหม่เป็นเอกสารทางการ: header ข้อมูลบริษัท/content/footer ชิดขอบล่างเสมอ, ตารางไม่มีเส้นกริด, ยอดเงินแปลงเป็นตัวอักษรภาษาไทยอัตโนมัติ
 
 
 ## In Progress
@@ -426,3 +432,4 @@ MVP ครบ 4 module หลักตาม System Scope แล้ว กำล
 - Accounting Module
 - Payment Gateway Integration / การกระทบยอดชำระเงินแบบเต็มรูปแบบ
 - Audit Log
+- ข้อมูลบริษัท (ชื่อ/ที่อยู่/เลขผู้เสียภาษี/บัญชีธนาคาร) ที่แสดงใน PDF (Invoice, Report) ยังเป็นค่า placeholder — ระบบยังไม่มีที่เก็บข้อมูลบริษัทจริง ต้องแก้ hardcode ในไฟล์ template โดยตรง

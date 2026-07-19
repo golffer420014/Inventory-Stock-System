@@ -30,6 +30,8 @@ Route            รับ request, ผูก path กับ controller, คุ�
 
 แยกโฟลเดอร์ตาม **layer ก่อน แล้วแบ่งไฟล์ย่อยตาม domain** ภายใน layer นั้น (เช่น `product`, `inventory`, `salesOrder`, `invoice`, `dashboard`)
 
+Domain ที่เป็น CRUD ตรงไปตรงมา ไม่มี transaction/join ซับซ้อน (`product`, `category`, `inventory`) ให้ repository เรียกผ่าน **Active Record base (`models/`)** แทนการเขียน SQL mapRow เอง — ส่วน domain ที่มี transaction หลายตาราง/workflow ซับซ้อน (`salesOrder`, `invoice`, `dashboard`, `report`) repository ยังคุย SQL ตรงผ่าน `pg` Pool/PoolClient เหมือนเดิม
+
 ## โครงสร้างโฟลเดอร์ (Folder Structure)
 
 ```txt
@@ -80,6 +82,14 @@ server/
     │   ├── dashboard.repository.ts
     │   └── report.repository.ts
     │
+    ├── models/              # Active Record base (Model) — ใช้แล้วใน product/category/inventory repository ปัจจุบัน
+    │   ├── base.model.ts      # Model abstract class กลาง: findAll/findById/findOneBy/findManyBy/create/updateById/deleteById/save
+    │   │                      # (แปลง camelCase <-> snake_case ให้อัตโนมัติ ไม่ต้องเขียน mapRow เอง)
+    │   ├── product.model.ts
+    │   ├── category.model.ts
+    │   └── inventoryMovement.model.ts
+    │   # invoice.model.ts, salesOrder.model.ts, salesOrderItem.model.ts มีไฟล์ไว้แล้วแต่ยังไม่ได้เอามาใช้จริง (repository ยังเป็น SQL ตรง)
+    │
     ├── middlewares/        # Express middleware
     │   ├── auth.middleware.ts        # Demo auth — อ่าน role จาก header `x-demo-role` (ยังไม่มีระบบ login จริง)
     │   ├── role.middleware.ts        # requireRole(...roles) ตรวจสิทธิ์ตาม Permission Matrix ก่อนเข้าถึง route
@@ -93,8 +103,10 @@ server/
     ├── cache/               # การเชื่อมต่อและใช้งาน cache
     │   └── redis.client.ts    # Redis client
     │
-    ├── templates/           # Template สำหรับสร้างเอกสาร
-    │   └── invoice.hbs        # Handlebars template ของ Invoice (ใช้ร่วมกับ Puppeteer เพื่อ generate PDF)
+    ├── templates/           # Template สำหรับสร้างเอกสาร PDF (Handlebars ใช้ร่วมกับ Puppeteer) — จัดเป็นเอกสารทางการ (header บริษัท/content/footer)
+    │   ├── invoice.hbs             # Invoice — มีช่องทางการชำระเงิน + ยอดเงินเป็นตัวอักษรภาษาไทยที่ footer
+    │   ├── salesReport.hbs         # Sales Report — ยอดขายรวมเป็นตัวอักษรภาษาไทยที่ footer
+    │   └── inventoryReport.hbs     # Inventory Report — สรุปรายงานที่ footer (ไม่มียอดเงิน)
     │
     ├── types/               # Type / Interface กลางที่ใช้ร่วมกันหลายไฟล์ในแต่ละโดเมน
     │   ├── product.types.ts

@@ -5,58 +5,101 @@
   <meta charset="utf-8" />
   <title>Invoice {{invoiceNumber}}</title>
   <style>
-    body { font-family: 'Tahoma', 'Segoe UI', sans-serif; padding: 24px; color: #222; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
-    h1 { font-size: 22px; margin: 0 0 4px; }
-    .meta { color: #666; font-size: 12px; }
-    .doc-info { text-align: right; font-size: 12px; color: #444; }
-    .doc-info .invoice-number { font-size: 16px; font-weight: 700; color: #222; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 16px; }
-    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
-    th { background: #f3f3f3; }
+    /* @page กำหนดขนาดกระดาษ + margin จริงให้ Puppeteer ใช้ตอน print (preferCSSPageSize: true ใน pdf.util.ts) */
+    @page { size: A4; margin: 16mm 12mm; }
+    /* 265mm = A4 297mm - 16mm บน/ล่างของ @page margin */
+    html, body { height: 265mm; margin: 0; }
+    body { display: flex; flex-direction: column; box-sizing: border-box; padding: 24px; font-family: 'Tahoma', 'Segoe UI', sans-serif; color: #222; }
+
+    /* header */
+    .doc-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding-bottom: 16px; border-bottom: 2px solid #222; margin-bottom: 20px; }
+    .company-name { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+    .company-detail { font-size: 11px; color: #555; line-height: 1.5; }
+    .doc-title { flex-shrink: 0; max-width: 260px; text-align: right; }
+    .doc-title h1 { font-size: 20px; margin: 0 0 4px; }
+    .doc-title .invoice-number { font-size: 15px; font-weight: 700; color: #222; }
+    .doc-title .meta { font-size: 11px; color: #666; margin-top: 2px; }
+
+    /* content */
+    .doc-content { flex: 1 0 auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { padding: 8px; text-align: left; font-weight: 700; border-bottom: 2px solid #222; }
+    td { padding: 8px; }
+    tbody tr:nth-child(even) { background: #f7f7f7; }
     .text-right { text-align: right; }
-    .total-row td { border: none; padding-top: 10px; font-size: 15px; font-weight: 700; }
+    .total-row td { padding-top: 14px; font-size: 15px; font-weight: 700; background: none; }
+
+    /* footer */
+    .doc-footer-wrap { margin-top: auto; padding-top: 16px; }
+    .doc-footer { display: flex; justify-content: space-between; gap: 24px; padding-top: 16px; border-top: 1px dashed #bbb; }
+    .footer-box { flex: 1; font-size: 11px; color: #444; }
+    .footer-box .label { font-weight: 700; color: #222; margin-bottom: 4px; }
+    .amount-in-words { font-size: 12px; font-weight: 700; margin-top: 6px; }
+    .footer-note { margin-top: 20px; font-size: 10px; color: #999; text-align: center; }
   </style>
 </head>
 <body>
-  <div class="header">
+  <div class="doc-header">
     <div>
-      <h1>ใบแจ้งหนี้ (Invoice)</h1>
-      <div class="meta">อ้างอิงคำสั่งขาย {{orderNumber}} · สร้างเมื่อ {{formatDate generatedAt}}</div>
+      <p class="company-name">บริษัท คลังสินค้า จำกัด (สมมติ)</p>
+      <div class="company-detail">
+        123 ถนนสุขุมวิท แขวงคลองตัน เขตคลองเตย กรุงเทพฯ 10110<br />
+        โทร. 02-123-4567 · เลขประจำตัวผู้เสียภาษี 0-0000-00000-00-0
+      </div>
     </div>
-    <div class="doc-info">
+    <div class="doc-title">
+      <h1>ใบแจ้งหนี้ (Invoice)</h1>
       <div class="invoice-number">{{invoiceNumber}}</div>
-      <div>วันที่ออกเอกสาร {{formatDate createdAt}}</div>
+      <div class="meta">อ้างอิงคำสั่งขาย {{orderNumber}}</div>
+      <div class="meta">วันที่ออกเอกสาร {{formatDate createdAt}}</div>
     </div>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>SKU</th>
-        <th>สินค้า</th>
-        <th class="text-right">จำนวน</th>
-        <th class="text-right">ราคาต่อหน่วย</th>
-        <th class="text-right">รวม</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#each items}}
-      <tr>
-        <td>{{this.sku}}</td>
-        <td>{{this.name}}</td>
-        <td class="text-right">{{this.quantity}}</td>
-        <td class="text-right">{{formatCurrency this.unitPrice}}</td>
-        <td class="text-right">{{formatCurrency this.subtotal}}</td>
-      </tr>
-      {{/each}}
-    </tbody>
-    <tfoot>
-      <tr class="total-row">
-        <td colspan="4" class="text-right">ยอดรวมทั้งสิ้น</td>
-        <td class="text-right">{{formatCurrency totalAmount}} บาท</td>
-      </tr>
-    </tfoot>
-  </table>
+  <div class="doc-content">
+    <table>
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>สินค้า</th>
+          <th class="text-right">จำนวน</th>
+          <th class="text-right">ราคาต่อหน่วย</th>
+          <th class="text-right">รวม</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each items}}
+        <tr>
+          <td>{{this.sku}}</td>
+          <td>{{this.name}}</td>
+          <td class="text-right">{{this.quantity}}</td>
+          <td class="text-right">{{formatCurrency this.unitPrice}}</td>
+          <td class="text-right">{{formatCurrency this.subtotal}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="4" class="text-right">ยอดรวมทั้งสิ้น</td>
+          <td class="text-right">{{formatCurrency totalAmount}} บาท</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="doc-footer-wrap">
+    <div class="doc-footer">
+      <div class="footer-box">
+        <div class="label">ช่องทางการชำระเงิน</div>
+        โอนเข้าบัญชี: ธนาคารกรุงเทพ (สมมติ)<br />
+        เลขที่บัญชี 000-0-00000-0 ชื่อบัญชี บริษัท คลังสินค้า จำกัด
+      </div>
+      <div class="footer-box">
+        <div class="label">จำนวนเงินเป็นตัวอักษร</div>
+        <div class="amount-in-words">({{formatBahtText totalAmount}})</div>
+      </div>
+    </div>
+
+    <div class="footer-note">เอกสารนี้ออกโดยระบบอัตโนมัติ · พิมพ์เมื่อ {{formatDate generatedAt}}</div>
+  </div>
 </body>
 </html>

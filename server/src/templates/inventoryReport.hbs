@@ -4,50 +4,93 @@
 <head>
   <meta charset="utf-8" />
   <style>
-    body { font-family: 'Tahoma', 'Segoe UI', sans-serif; padding: 24px; color: #222; }
-    h1 { font-size: 20px; margin: 0 0 4px; }
-    .meta { color: #666; font-size: 12px; margin-bottom: 16px; }
-    .summary { display: flex; gap: 24px; margin-bottom: 16px; font-size: 13px; }
+    /* @page กำหนดขนาดกระดาษ + margin จริงให้ Puppeteer ใช้ตอน print (preferCSSPageSize: true ใน pdf.util.ts) */
+    @page { size: A4; margin: 16mm 12mm; }
+    /* 265mm = A4 297mm - 16mm บน/ล่างของ @page margin */
+    html, body { height: 265mm; margin: 0; }
+    body { display: flex; flex-direction: column; box-sizing: border-box; padding: 24px; font-family: 'Tahoma', 'Segoe UI', sans-serif; color: #222; }
+
+    /* header */
+    .doc-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding-bottom: 16px; border-bottom: 2px solid #222; margin-bottom: 20px; }
+    .company-name { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+    .company-detail { font-size: 11px; color: #555; line-height: 1.5; }
+    .doc-title { flex-shrink: 0; max-width: 260px; text-align: right; }
+    .doc-title h1 { font-size: 18px; margin: 0 0 4px; }
+    .doc-title .meta { font-size: 11px; color: #666; margin-top: 2px; }
+
+    /* content */
+    .doc-content { flex: 1 0 auto; }
+    .summary { display: flex; gap: 24px; margin-bottom: 20px; font-size: 13px; }
     .summary div { border: 1px solid #ddd; border-radius: 6px; padding: 8px 12px; }
     .summary .label { color: #666; font-size: 11px; }
     .summary .value { font-size: 15px; font-weight: 700; }
     table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
-    th { background: #f3f3f3; }
+    th { padding: 8px; text-align: left; font-weight: 700; border-bottom: 2px solid #222; }
+    td { padding: 8px; }
+    tbody tr:nth-child(even) { background: #f7f7f7; }
     .text-right { text-align: right; }
+
+    /* footer */
+    .doc-footer-wrap { margin-top: auto; padding-top: 16px; }
+    .doc-footer { padding-top: 16px; border-top: 1px dashed #bbb; font-size: 12px; color: #444; }
+    .doc-footer .label { font-weight: 700; color: #222; margin-bottom: 4px; }
+    .footer-note { margin-top: 20px; font-size: 10px; color: #999; text-align: center; }
   </style>
 </head>
 <body>
-  <h1>Inventory Report</h1>
-  <div class="meta">สร้างเมื่อ {{formatDate generatedAt}}{{#if dateRangeText}} · ยอดเคลื่อนไหวช่วงวันที่ {{dateRangeText}}{{/if}}</div>
-
-  <div class="summary">
-    <div><div class="label">Stock คงเหลือ</div><div class="value">{{totalStockQuantity}}</div></div>
-    <div><div class="label">สินค้าใกล้หมด</div><div class="value">{{lowStockProductCount}}</div></div>
-    <div><div class="label">รับเข้า (IN)</div><div class="value">+{{totalIn}}</div></div>
-    <div><div class="label">เบิกออก (OUT)</div><div class="value">-{{totalOut}}</div></div>
-    <div><div class="label">ปรับปรุง</div><div class="value">{{totalAdjustment}}</div></div>
+  <div class="doc-header">
+    <div>
+      <p class="company-name">บริษัท คลังสินค้า จำกัด (สมมติ)</p>
+      <div class="company-detail">
+        123 ถนนสุขุมวิท แขวงคลองตัน เขตคลองเตย กรุงเทพฯ 10110<br />
+        โทร. 02-123-4567 · เลขประจำตัวผู้เสียภาษี 0-0000-00000-00-0
+      </div>
+    </div>
+    <div class="doc-title">
+      <h1>รายงานสต๊อกสินค้า (Inventory Report)</h1>
+      <div class="meta">สร้างเมื่อ {{formatDate generatedAt}}</div>
+      {{#if dateRangeText}}<div class="meta">ยอดเคลื่อนไหวช่วงวันที่ {{dateRangeText}}</div>{{/if}}
+    </div>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>SKU</th>
-        <th>Name</th>
-        <th class="text-right">Stock Quantity</th>
-        <th>Low Stock</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#each products}}
-      <tr>
-        <td>{{this.sku}}</td>
-        <td>{{this.name}}</td>
-        <td class="text-right">{{this.stockQuantity}}</td>
-        <td>{{#if this.isLowStock}}Yes{{else}}No{{/if}}</td>
-      </tr>
-      {{/each}}
-    </tbody>
-  </table>
+  <div class="doc-content">
+    <div class="summary">
+      <div><div class="label">Stock คงเหลือ</div><div class="value">{{totalStockQuantity}}</div></div>
+      <div><div class="label">สินค้าใกล้หมด</div><div class="value">{{lowStockProductCount}}</div></div>
+      <div><div class="label">รับเข้า (IN)</div><div class="value">+{{totalIn}}</div></div>
+      <div><div class="label">เบิกออก (OUT)</div><div class="value">-{{totalOut}}</div></div>
+      <div><div class="label">ปรับปรุง</div><div class="value">{{totalAdjustment}}</div></div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Name</th>
+          <th class="text-right">Stock Quantity</th>
+          <th>Low Stock</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each products}}
+        <tr>
+          <td>{{this.sku}}</td>
+          <td>{{this.name}}</td>
+          <td class="text-right">{{this.stockQuantity}}</td>
+          <td>{{#if this.isLowStock}}Yes{{else}}No{{/if}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="doc-footer-wrap">
+    <div class="doc-footer">
+      <div class="label">สรุปรายงาน</div>
+      สินค้าทั้งหมด {{products.length}} รายการ คงเหลือรวม {{totalStockQuantity}} หน่วย · สินค้าใกล้หมด {{lowStockProductCount}} รายการ
+    </div>
+
+    <div class="footer-note">เอกสารนี้ออกโดยระบบอัตโนมัติ · พิมพ์เมื่อ {{formatDate generatedAt}}</div>
+  </div>
 </body>
 </html>
