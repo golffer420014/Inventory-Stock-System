@@ -77,6 +77,7 @@ server/
     │
     ├── types/               # Type/Interface กลางที่ใช้ร่วมกันหลายไฟล์ในแต่ละโดเมน
     ├── utils/               # Utility function ที่ใช้ร่วมกันหลาย layer/domain (csv, date, pdf, thaiBahtText)
+    │   └── notificationBus.ts # EventEmitter ในหน่วยความจำ — pub/sub ระหว่าง repository ที่ตัดสต๊อกกับ SSE connection ของแต่ละ client
     ├── app.ts                # ประกอบ Express app (middleware, route, error handler) - ไม่ start server
     └── server.ts              # Entry point - สั่ง app.listen()
 ```
@@ -123,8 +124,8 @@ Request ต้องส่ง header **`x-demo-role`** เพื่อจำล�
 | `/invoices`, `/invoices/:id/pdf` | GET | Admin, Sales, Warehouse, Viewer |
 | `/dashboard/summary` | GET | Admin, Sales, Warehouse, Viewer |
 | `/reports/sales`, `/inventory` (+ `/csv`, `/pdf`) | GET | Admin, Sales, Warehouse, Viewer |
-| `/notifications/low-stock` | GET | ทุก role (client poll ทุก 15 วินาที) |
+| `/notifications/stream` | GET | ทุก role (SSE, ไม่ผ่าน `requireRole` — EventSource ส่ง custom header ไม่ได้) |
 
 ไฟล์ที่อัปโหลดผ่าน `POST /api/uploads` (รูปสินค้า, สลิปหลักฐานการชำระเงิน) ถูกเก็บไว้ในดิสก์ของ server เอง (`server/public/uploads` ผ่าน Multer) แล้ว serve กลับผ่าน `express.static` ที่ path `/uploads/<filename>` - ไม่ได้ใช้ Supabase Storage
 
-> **หมายเหตุ:** `GET /notifications/low-stock` เดิมออกแบบเป็น Server-Sent Events (`EventEmitter` ในหน่วยความจำ) แต่พบว่าใช้งานจริงบน serverless (Vercel) ไม่ได้ เพราะแต่ละ request อาจไปคนละ instance กัน จึงปรับเป็น REST endpoint ธรรมดาให้ client poll ทุก 15 วินาทีแทน - client เก็บค่าสต๊อกล่าสุดที่เคยเห็นไว้เทียบเอง ถ้าต่างถึง toast แจ้งเตือน
+`GET /notifications/stream` เปิด Server-Sent Events connection ค้างไว้ (`EventEmitter` ในหน่วยความจำฝั่ง server เป็น pub/sub ระหว่าง request ที่ตัดสต๊อกกับแต่ละ client ที่เปิด connection ค้าง) ใช้ push แจ้งเตือนสินค้าใกล้หมดแบบ real-time ไปที่ client ทันทีที่มีการตัดสต๊อก ไม่ต้อง poll — เหมาะกับการรันบนเซิร์ฟเวอร์แบบ long-running instance เดียว (ไม่ใช่ serverless ที่ request แต่ละครั้งอาจไปคนละ instance)

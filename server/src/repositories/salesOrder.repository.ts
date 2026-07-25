@@ -1,6 +1,9 @@
 import type { PoolClient } from 'pg'
 import { pool } from '@/config/database.js'
+import { LOW_STOCK_THRESHOLD } from '@/repositories/dashboard.repository.js'
 import type { iSalesOrder, iSalesOrderItemInput, tSalesOrderStatus } from '@/types/salesOrder.types.js'
+import { emitLowStock } from '@/utils/notificationBus.js'
+import type { iLowStockEvent } from '@/utils/notificationBus.js'
 
 interface SalesOrderRow {
   id: number
@@ -226,6 +229,8 @@ export const salesOrderRepository = {
         [id]
       )
 
+      const lowStockEvents: iLowStockEvent[] = []
+
       for (const item of itemsResult.rows) {
         const productResult = await client.query<{ stock_quantity: number; sku: string; name: string }>(
           'SELECT stock_quantity, sku, name FROM products WHERE id = $1 FOR UPDATE',
@@ -251,12 +256,19 @@ export const salesOrderRepository = {
            VALUES ($1, 'OUT', $2, $3)`,
           [item.product_id, item.quantity, `Sales Order ${orderNumber}`]
         )
+
+        // แจ้งเตือนแบบ real-time ทุกครั้งที่ตัดสต๊อกแล้วผลลัพธ์ยังต่ำกว่าเกณฑ์ ไม่ใช่แค่ตอนตัดข้ามเกณฑ์ครั้งแรก
+        if (newQuantity <= LOW_STOCK_THRESHOLD) {
+          lowStockEvents.push({ productId: item.product_id, sku: product.sku, name: product.name, stockQuantity: newQuantity })
+        }
       }
 
       await client.query(`UPDATE sales_orders SET status = 'FULFILLED', updated_at = now() WHERE id = $1`, [id])
 
       const order = await findByIdWithClient(client, id)
       await client.query('COMMIT')
+
+      lowStockEvents.forEach(emitLowStock)
 
       return order as iSalesOrder
     } catch (err) {

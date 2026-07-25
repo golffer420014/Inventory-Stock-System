@@ -57,7 +57,7 @@ client/
     │   │   ├── BaseCombobox.vue      # dropdown ค้นหาได้ รองรับ prop `error`
     │   │   ├── BaseDialog.vue        # modal กลาง มี focus trap + คืน focus ให้ trigger ตอนปิด
     │   │   ├── BaseConfirmDialog.vue # confirm dialog แบบ imperative ผ่าน useConfirmStore แทน window.confirm
-    │   │   ├── BaseToastStack.vue    # toast รวม (ผลลัพธ์ action + แจ้งเตือนสต๊อกใกล้หมดจาก polling)
+    │   │   ├── BaseToastStack.vue    # toast รวม (ผลลัพธ์ action + แจ้งเตือนสต๊อกใกล้หมดจาก SSE)
     │   │   └── BaseCard.vue, BaseAlert.vue, BaseBadge.vue, BaseSpinner.vue, BaseAsyncState.vue, BaseChart.vue
     │   ├── dashboard/ inventory/ product/ sales/   # Component เฉพาะโดเมนนั้น ๆ
     │   ├── AppSidebar.vue     # เมนูนำทางหลัก + ปุ่มพับ/ขยาย + ThemeToggle
@@ -76,7 +76,7 @@ client/
     │
     ├── stores/                 # Pinia (Option Store) แยกตามโดเมน
     │   ├── dashboard.ts inventory.ts invoice.ts product.ts category.ts report.ts salesOrder.ts
-    │   ├── notification.ts     # toast แจ้งเตือนสินค้าใกล้หมด รับข้อมูลจาก useNotificationStream (polling)
+    │   ├── notification.ts     # toast แจ้งเตือนสินค้าใกล้หมด รับข้อมูลจาก useNotificationStream (SSE)
     │   ├── toast.ts             # toast ทั่วไป - useToastStore().push(message, variant)
     │   ├── confirm.ts           # confirm dialog แบบ imperative - useConfirmStore().ask({...}) คืน Promise<boolean>
     │   ├── role.ts              # Demo Role ปัจจุบันของผู้ใช้ (สลับสิทธิ์ทดสอบ)
@@ -88,7 +88,7 @@ client/
     │
     ├── composables/
     │   ├── usePermission.ts          # ตรวจสิทธิ์ role ปัจจุบันตาม Permission Matrix
-    │   └── useNotificationStream.ts  # poll GET /api/notifications/low-stock ทุก 15 วินาที เทียบสต๊อกที่เปลี่ยนแล้ว push เข้า notification store (เดิมใช้ SSE แต่เปลี่ยนเพราะใช้ไม่ได้บน serverless)
+    │   └── useNotificationStream.ts  # เปิด SSE ไปที่ /api/notifications/stream แล้ว push เข้า notification store
     │
     ├── directives/
     │   └── numberFormat.ts     # v-number-format จัดตัวเลขใส่ comma อัตโนมัติใน input

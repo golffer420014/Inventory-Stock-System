@@ -52,8 +52,7 @@
 - **เจ้าของธุรกิจ/ผู้จัดการ** เห็นภาพรวมยอดขาย สต๊อกคงเหลือ และได้รับแจ้งเตือนทันทีที่สินค้าใกล้หมด โดยไม่ต้องเดินไปถามพนักงานหรือเปิดชีทเช็คเอง
 - แต่ละคนในทีมเห็นและทำได้เฉพาะสิ่งที่ตำแหน่งตัวเองควรทำ (ฝ่ายขาย/คลัง/ผู้บริหาร/ผู้ดูรายงาน) ไม่ต้องกังวลว่าใครจะกดปุ่มที่ไม่ควรกด
 - ต้องใช้เอกสาร (ใบแจ้งหนี้ รายงานยอดขาย/สต๊อก) ก็กดปุ่มเดียวได้ไฟล์ PDF พร้อมพิมพ์ทันที ไม่ต้องเอาไปจัดหน้าใน Excel เอง
-
-ระหว่างทางก็เจอปัญหาที่ต้องแก้จริง เช่น ตอนแรกออกแบบให้แจ้งเตือนสินค้าใกล้หมดขึ้นทันทีแบบ real-time แต่พอเอาไปรันบน hosting แบบ serverless จริงกลับใช้ไม่ได้ เพราะเซิร์ฟเวอร์ไม่ได้อยู่เครื่องเดียวตลอดเวลา เลยต้องกลับมาปรับวิธีให้ตรวจสอบเป็นระยะแทน ระบบถึงจะทำงานได้จริงในโลกจริง ไม่ใช่แค่ในเครื่องตัวเอง
+- สินค้าใกล้หมดสต๊อก ระบบแจ้งเตือนขึ้นทันทีแบบ real-time ทุกครั้งที่มีการตัดสต๊อก ไม่ต้องรอ refresh หน้าจอ
 
 รายละเอียดทั้งหมดอยู่ด้านล่างนี้ครับ
 
@@ -106,7 +105,7 @@
 
 - รับสินค้าเข้า (Stock In) / เบิกสินค้าออก (Stock Out) / ปรับปรุงจำนวนสินค้า (Stock Adjustment) ผ่าน dialog เดียว
 - ดูประวัติการเคลื่อนไหวของสินค้า (Inventory Movement) พร้อมค้นหาจากชื่อ/SKU/หมายเหตุ
-- แจ้งเตือนสินค้าใกล้หมดแบบ near real-time (poll ทุก 15 วินาที + toast)
+- แจ้งเตือนสินค้าใกล้หมดแบบ real-time (Server-Sent Events + toast)
 </details>
 
 <details>
@@ -127,7 +126,7 @@
 - KPI Card: ยอดขาย, จำนวนสินค้า, Stock คงเหลือ, สินค้าใกล้หมด
 - กราฟ Stock คงเหลือแยกตามสินค้า และกราฟสรุปการเคลื่อนไหวสต๊อก (ECharts)
 - Sales Report / Inventory Report พร้อม filter ช่วงวันที่, Export เป็น CSV, Generate/Preview เป็น PDF
-- แจ้งเตือนสินค้าใกล้หมดแบบ near real-time (poll ทุก 15 วินาที) ทันทีที่สต๊อกตัดข้ามเกณฑ์ต่ำ
+- แจ้งเตือนสินค้าใกล้หมดแบบ real-time (Server-Sent Events) ทันทีที่สต๊อกตัดข้ามเกณฑ์ต่ำ
 </details>
 
 นอกจากนี้ยังมี **Usability pass ทั่วระบบ**: toast แจ้งผลลัพธ์ทุก action, confirm dialog แทน `window.confirm`, validation รายช่องในฟอร์ม, dialog รองรับ keyboard เต็มรูปแบบ (focus trap), หน้าแรกแนะนำ workflow แบบ step-by-step สำหรับผู้ใช้ใหม่
@@ -148,7 +147,7 @@ stateDiagram-v2
 
     note right of FULFILLED
         ตัดสต๊อกข้ามเกณฑ์ต่ำ?
-        → แจ้งเตือน near real-time (client poll ทุก 15 วินาที)
+        → แจ้งเตือน real-time (SSE)
         → อัปเดต Dashboard/Report
     end note
 ```
@@ -170,7 +169,7 @@ stateDiagram-v2
 | ดู Invoice / พิมพ์ PDF | ✅ | ✅ | 👁️ | 👁️ |
 | Stock In / Stock Out / Adjustment | ✅ | ❌ | ✅ | ❌ |
 | Inventory Movement | ✅ | 👁️ | ✅ | 👁️ |
-| แจ้งเตือนสินค้าใกล้หมด (near real-time) | ✅ | ✅ | ✅ | ✅ |
+| แจ้งเตือนสินค้าใกล้หมด (Real-time) | ✅ | ✅ | ✅ | ✅ |
 | Report | ✅ | ✅ | ✅ | ✅ |
 
 `✅ ใช้งานได้` · `👁️ ดูอย่างเดียว` · `❌ ไม่มีสิทธิ์` - บังคับสิทธิ์ทั้งฝั่ง Server (middleware `requireRole`) และฝั่ง Client (UI)
@@ -185,7 +184,7 @@ stateDiagram-v2
 | **Backend** | Node.js, Express, TypeScript (`tsx`) |
 | **Database** | PostgreSQL ผ่าน [Supabase](https://supabase.com) (คุยผ่าน `pg` โดยตรง ไม่ใช้ ORM) |
 | **Document/PDF** | Puppeteer + Handlebars (Invoice, Sales/Inventory Report) |
-| **Notification** | Polling ทุก 15 วินาที + diff ฝั่ง client (แจ้งเตือนสินค้าใกล้หมด - เดิมใช้ SSE แต่ปรับเพราะใช้ไม่ได้บน serverless) |
+| **Real-time** | Server-Sent Events (แจ้งเตือนสินค้าใกล้หมด) |
 | **File Upload** | Multer (รูปสินค้า, สลิปหลักฐานการชำระเงิน) |
 | **Deployment** | Vercel (Frontend), Supabase (Database) |
 
@@ -196,7 +195,7 @@ stateDiagram-v2
 ```mermaid
 graph LR
     U["👤 User / Browser"] -->|HTTPS| FE["Frontend<br/>Vue 3 + TypeScript<br/>(Vercel)"]
-    FE -->|"REST API (+ polling)<br/>x-demo-role header"| BE["Backend API<br/>Node.js + Express<br/>Route → Controller → Service → Repository"]
+    FE -->|"REST API + SSE<br/>x-demo-role header"| BE["Backend API<br/>Node.js + Express<br/>Route → Controller → Service → Repository"]
     BE --> DB[("PostgreSQL<br/>(Supabase)")]
     BE --> PDF["Puppeteer + Handlebars<br/>PDF Engine"]
     BE -->|Multer| FS["Local Disk<br/>server/public/uploads"]
@@ -276,7 +275,7 @@ MVP ครบ 4 module หลักตาม System Scope แล้ว ทดส
 - Sales Order & Invoice workflow แบบเต็ม (Create → Confirm → แนบไฟล์การชำระเงิน → Fulfill → ตัดสต๊อก)
 - Invoice PDF generation รายใบ, Sales/Inventory Report พร้อม Export CSV และ PDF
 - Dashboard พร้อมกราฟ (ECharts) และ KPI Card
-- แจ้งเตือนสินค้าใกล้หมดแบบ near real-time (polling) - ออกแบบใหม่ให้รองรับ serverless หลังพบว่า SSE เดิมใช้ไม่ได้บน Vercel
+- แจ้งเตือนสินค้าใกล้หมดแบบ Real-time (Server-Sent Events)
 - หน้าแรก (Home) แนะนำ workflow แบบ step-by-step สำหรับผู้ใช้ใหม่
 - Usability pass ทั่วระบบ: toast, confirm dialog, validation รายช่อง, focus trap, ค้นหาในลิสต์ยาว
 - จัดรูปแบบ PDF ใหม่เป็นเอกสารทางการ (header บริษัท, ยอดเงินเป็นตัวอักษรภาษาไทยอัตโนมัติ)
