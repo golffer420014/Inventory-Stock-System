@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/screenshots/home-light.png" alt="หน้า Home ของ Inventory & Stock System" width="100%" />
+<img src="docs/screenshots/demo.gif" alt="Demo การใช้งาน Inventory & Stock System" width="100%" />
 
 <h1>📦 Inventory & Stock System</h1>
 
