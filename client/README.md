@@ -1,139 +1,128 @@
 # Client — Inventory & Stock System (Frontend)
 
+<p>
+<img alt="Vue 3" src="https://img.shields.io/badge/Vue_3-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white" />
+<img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" />
+<img alt="Vite" src="https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white" />
+<img alt="Pinia" src="https://img.shields.io/badge/Pinia-FFD859?style=flat-square&logo=pinia&logoColor=black" />
+<img alt="TailwindCSS" src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" />
+</p>
+
 Frontend ของระบบ Inventory & Stock System (Mini ERP) พัฒนาด้วย Vue 3 + TypeScript
 
-รายละเอียดภาพรวมของทั้งระบบ (Business Workflow, Role Permission, Tech Stack) ดูได้ที่ [README หลักของโปรเจกต์](../README.md)
+> ภาพรวมทั้งระบบ (Business Workflow, Role Permission, Tech Stack, Screenshot) ดูได้ที่ [README หลักของโปรเจกต์](../README.md)
+
+<img src="../docs/screenshots/dashboard-light.png" alt="Dashboard" width="100%" />
 
 ---
 
 ## Stack
 
-- Vue 3 (`<script setup lang="ts">`)
-- TypeScript
-- Vue Router
-- Pinia (Option Store)
-- Tailwind CSS v4
-- Lucide Vue (icons)
-- Vite
+- **Vue 3** — `<script setup lang="ts">` ล้วน
+- **TypeScript**
+- **Vue Router**
+- **Pinia** (Option Store เท่านั้น — ดูกฎด้านล่าง)
+- **Tailwind CSS v4**
+- **Lucide Vue** — icon
+- **ECharts** — กราฟ Dashboard
+- **Vite**
 
 ## รูปแบบโครงสร้าง (Structure Pattern)
 
-โปรเจกต์นี้ใช้ **Feature-based folder ผสม Layered structure** กล่าวคือแบ่งโฟลเดอร์หลักตามหน้าที่ (layer) ก่อน เช่น `views`, `components`, `stores`, `services` แล้วค่อยแบ่งย่อยตาม feature/domain ภายใน layer นั้นอีกชั้น (เช่น `inventory`, `product`, `sales`, `dashboard`, `report`)
+โปรเจกต์นี้ใช้ **Feature-based folder ผสม Layered structure** — แบ่งโฟลเดอร์หลักตาม layer ก่อน (`views`, `components`, `stores`, `services`) แล้วค่อยแบ่งย่อยตาม domain ภายใน layer นั้น (`inventory`, `product`, `sales`, `dashboard`, `report`)
 
-Flow การทำงานของข้อมูลในหน้าจอทั่วไป:
+ข้อมูลไหลทางเดียวเสมอในทุกหน้า:
 
+```mermaid
+graph LR
+    A["View (.vue)"] --> B["Store (Pinia)"]
+    B --> C["Service<br/>(services/*.service.ts)"]
+    C --> D["http.ts<br/>(axios wrapper)"]
+    D --> E["Backend API"]
 ```
-View (.vue)
-  → เรียก Store (Pinia)
-    → เรียก Service (services/*.service.ts)
-      → เรียก API ผ่าน http.ts (axios/fetch wrapper)
-        → Backend
-```
 
-ดูรายละเอียดรูปแบบการเขียนโค้ดในไฟล์ `.vue` (ลำดับ import / store / props / ref / computed / action / event / watch / onMounted) และกฎการตั้งชื่อ interface/type ได้ที่ [CLAUDE.md](./CLAUDE.md)
+> ดูกฎการเขียนโค้ดใน `.vue` แบบละเอียด (ลำดับ import / store / props / ref / computed / action / event / watch / onMounted) และกฎการตั้งชื่อ interface/type ได้ที่ [CLAUDE.md](./CLAUDE.md)
 
 ## โครงสร้างโฟลเดอร์ (Folder Structure)
 
 ```txt
 client/
-├── public/                  # Static asset ที่ไม่ผ่าน build (favicon, ฯลฯ)
+├── public/                  # Static asset ที่ไม่ผ่าน build (favicon, mascot ฯลฯ)
 └── src/
-    ├── components/          # Vue component ที่ใช้ซ้ำได้ (ไม่ใช่ทั้งหน้า)
-    │   ├── common/           # Component กลางของทั้งระบบ
-    │   │   ├── BaseButton.vue        # รองรับ variant primary/secondary/ghost/danger
-    │   │   ├── BaseInput.vue         # มี prop `error` แสดงกรอบแดง + ข้อความใต้ช่อง
+    ├── components/
+    │   ├── common/           # Component กลางที่ใช้ซ้ำได้ทั้งระบบ
+    │   │   ├── BaseButton.vue        # variant primary/secondary/ghost/danger
+    │   │   ├── BaseInput.vue         # prop `error` → กรอบแดง + ข้อความใต้ช่อง
     │   │   ├── BaseInputNumber.vue   # เหมือน BaseInput แต่ format ตัวเลขมี comma อัตโนมัติ
-    │   │   ├── BaseCombobox.vue      # dropdown ค้นหาได้ รองรับ prop `error` เหมือนกัน
+    │   │   ├── BaseCombobox.vue      # dropdown ค้นหาได้ รองรับ prop `error`
     │   │   ├── BaseDialog.vue        # modal กลาง มี focus trap + คืน focus ให้ trigger ตอนปิด
-    │   │   ├── BaseConfirmDialog.vue # confirm dialog แบบ imperative (ผ่าน useConfirmStore) แทน window.confirm
-    │   │   ├── BaseToastStack.vue    # แสดง toast รวมทั้งแจ้งเตือนสต๊อกใกล้หมดและผลลัพธ์ action ทั่วไป
-    │   │   ├── BaseCard.vue, BaseAlert.vue, BaseBadge.vue, BaseSpinner.vue, BaseAsyncState.vue, BaseChart.vue
-    │   │
-    │   ├── dashboard/        # Component เฉพาะโดเมน Dashboard (การ์ดสรุปยอด, กราฟ ฯลฯ)
-    │   ├── inventory/        # Component เฉพาะโดเมน Inventory (ฟอร์ม Stock In/Out, ตารางการเคลื่อนไหว ฯลฯ)
-    │   ├── product/          # Component เฉพาะโดเมน Product
-    │   ├── sales/            # Component เฉพาะโดเมน Sales Order / Invoice
-    │   ├── AppSidebar.vue    # เมนูนำทางหลักของระบบ
-    │   ├── AppBreadcrumb.vue # Breadcrumb แสดงตำแหน่งหน้าปัจจุบัน
-    │   └── ThemeToggle.vue   # ปุ่มสลับ Light/Dark theme
+    │   │   ├── BaseConfirmDialog.vue # confirm dialog แบบ imperative ผ่าน useConfirmStore แทน window.confirm
+    │   │   ├── BaseToastStack.vue    # toast รวม (ผลลัพธ์ action + แจ้งเตือนสต๊อกใกล้หมดจาก polling)
+    │   │   └── BaseCard.vue, BaseAlert.vue, BaseBadge.vue, BaseSpinner.vue, BaseAsyncState.vue, BaseChart.vue
+    │   ├── dashboard/ inventory/ product/ sales/   # Component เฉพาะโดเมนนั้น ๆ
+    │   ├── AppSidebar.vue     # เมนูนำทางหลัก + ปุ่มพับ/ขยาย + ThemeToggle
+    │   ├── AppBreadcrumb.vue  # Breadcrumb ตำแหน่งหน้าปัจจุบัน
+    │   └── ThemeToggle.vue    # ปุ่มสลับ Light/Dark theme
     │
-    ├── layouts/              # โครงหน้าหลัก (Layout) ที่ view ต่าง ๆ ถูกห่อด้วย
-    │   └── DefaultLayout.vue # Layout หลักของระบบ (Sidebar + Breadcrumb + เนื้อหา)
+    ├── layouts/
+    │   └── DefaultLayout.vue  # Layout หลัก (Sidebar + Breadcrumb + เนื้อหา) — mount BaseConfirmDialog/BaseToastStack ที่นี่
     │
-    ├── views/                # หน้าจอที่ผูกกับ route โดยตรง (1 ไฟล์ = 1 หน้า)
-    │   ├── dashboard/         # หน้า Dashboard ภาพรวม
-    │   ├── inventory/         # หน้า Stock In, Stock Out, Stock Adjustment, Inventory Movement
-    │   ├── product/           # หน้ารายการสินค้า
-    │   ├── report/            # หน้ารายงาน (Sales Report, Inventory Report)
-    │   ├── sales/              # หน้า Sales Order (list/form) และ Invoice
-    │   └── HomeView.vue        # หน้าแรกของระบบ
+    ├── views/                 # หน้าจอผูกกับ route โดยตรง (1 ไฟล์ = 1 หน้า)
+    │   ├── dashboard/ inventory/ product/ report/ sales/
+    │   └── HomeView.vue        # หน้าแรก แนะนำ workflow แบบ step-by-step
     │
-    ├── router/               # การตั้งค่า Vue Router (กำหนด route, meta title, group เมนู)
-    │   └── index.ts
+    ├── router/
+    │   └── index.ts            # ตั้งค่า route, meta title, group เมนู
     │
-    ├── stores/               # Pinia store (Option Store) แยกตามโดเมน — เก็บ state กลาง, getter, action ที่เรียก service
-    │   ├── dashboard.ts
-    │   ├── inventory.ts
-    │   ├── invoice.ts
-    │   ├── product.ts
-    │   ├── category.ts
-    │   ├── report.ts
-    │   ├── notification.ts    # เก็บ toast แจ้งเตือนสินค้าใกล้หมด รับข้อมูลจาก useNotificationStream (SSE)
-    │   ├── toast.ts            # toast ทั่วไป (สำเร็จ/ล้มเหลว) — เรียกผ่าน useToastStore().push(message, variant)
-    │   ├── confirm.ts          # confirm dialog แบบ imperative — เรียกผ่าน useConfirmStore().ask({...}) ได้ Promise<boolean>
-    │   ├── role.ts             # เก็บ role ปัจจุบันของผู้ใช้ (Demo Role สำหรับสลับสิทธิ์ทดสอบ)
-    │   ├── salesOrder.ts
-    │   └── theme.ts            # เก็บสถานะ Light/Dark theme
+    ├── stores/                 # Pinia (Option Store) แยกตามโดเมน
+    │   ├── dashboard.ts inventory.ts invoice.ts product.ts category.ts report.ts salesOrder.ts
+    │   ├── notification.ts     # toast แจ้งเตือนสินค้าใกล้หมด รับข้อมูลจาก useNotificationStream (polling)
+    │   ├── toast.ts             # toast ทั่วไป — useToastStore().push(message, variant)
+    │   ├── confirm.ts           # confirm dialog แบบ imperative — useConfirmStore().ask({...}) คืน Promise<boolean>
+    │   ├── role.ts              # Demo Role ปัจจุบันของผู้ใช้ (สลับสิทธิ์ทดสอบ)
+    │   └── theme.ts             # สถานะ Light/Dark theme (persist ผ่าน localStorage)
     │
-    ├── services/             # ชั้นเรียก API (HTTP layer) แยกตามโดเมน ไม่มี state, ไม่ผูกกับ Vue
-    │   ├── http.ts             # ตัวกลางเรียก HTTP (base URL, header, error handling ร่วม)
-    │   ├── dashboard.service.ts
-    │   ├── inventory.service.ts
-    │   ├── invoice.service.ts
-    │   ├── product.service.ts
-    │   ├── category.service.ts
-    │   ├── report.service.ts
-    │   ├── upload.service.ts   # อัปโหลดไฟล์ (รูปสินค้า/สลิป) ไปที่ POST /api/uploads
-    │   └── salesOrder.service.ts
+    ├── services/               # HTTP layer แยกตามโดเมน — ไม่มี state, ไม่ผูกกับ Vue
+    │   ├── http.ts              # base URL, header (x-demo-role), error handling ร่วม
+    │   └── dashboard/inventory/invoice/product/category/report/salesOrder/upload.service.ts
     │
-    ├── composables/          # Composition function ที่ใช้ร่วมกันข้าม component
-    │   ├── usePermission.ts         # ตรวจสอบสิทธิ์ของ role ปัจจุบันตาม Permission Matrix
-    │   └── useNotificationStream.ts # เปิด SSE connection ไปที่ /api/notifications/stream แล้ว push เข้า notification store
+    ├── composables/
+    │   ├── usePermission.ts          # ตรวจสิทธิ์ role ปัจจุบันตาม Permission Matrix
+    │   └── useNotificationStream.ts  # poll GET /api/notifications/low-stock ทุก 15 วินาที เทียบสต๊อกที่เปลี่ยนแล้ว push เข้า notification store (เดิมใช้ SSE แต่เปลี่ยนเพราะใช้ไม่ได้บน serverless)
     │
-    ├── directives/           # Custom Vue directive
-    │   └── numberFormat.ts    # v-number-format จัดรูปแบบตัวเลขใส่ comma อัตโนมัติใน input
+    ├── directives/
+    │   └── numberFormat.ts     # v-number-format จัดตัวเลขใส่ comma อัตโนมัติใน input
     │
-    ├── types/                # Type / Interface กลางที่ใช้ร่วมกันหลายไฟล์ในแต่ละโดเมน (prefix `i` = interface, prefix `t` = type alias)
-    │   ├── dashboard.types.ts
-    │   ├── inventory.types.ts
-    │   ├── product.types.ts
-    │   ├── report.types.ts
-    │   ├── notification.types.ts
-    │   ├── role.types.ts
-    │   └── salesOrder.types.ts
-    │
-    ├── App.vue                # Root component
-    ├── main.ts                 # Entry point — สร้าง app, ติดตั้ง Pinia, Router, directive
-    └── style.css               # Global style / Tailwind entry
+    ├── types/                  # Type/Interface กลาง (prefix `i` = interface, `t` = type alias)
+    ├── App.vue                 # Root component
+    ├── main.ts                  # Entry point — สร้าง app, ติดตั้ง Pinia/Router/directive
+    └── style.css                # Global style, CSS variable ของธีม (leather/brass), Tailwind entry
 ```
 
 ## แนวทาง UI/UX ที่ใช้ร่วมกันทั้งระบบ
 
-- **แจ้งผลลัพธ์ action ด้วย toast เสมอ** — เรียก `useToastStore().push(message, 'success' | 'destructive')` หลัง action สำเร็จ อย่าปิด dialog เงียบ ๆ โดยไม่บอกผล
-- **ยืนยัน action ที่ทำลายข้อมูลด้วย `useConfirmStore().ask({ title, message, confirmText, danger })`** (คืน `Promise<boolean>`) แทน `window.confirm` เพื่อให้ตรงธีมแอปและบอก impact ได้ (เช่น จำนวนสินค้าที่ผูกกับหมวดหมู่ที่จะลบ)
-- **ฟอร์มที่ต้อง validate ให้ใช้ prop `error` ของ `BaseInput` / `BaseInputNumber` / `BaseCombobox`** เพื่อชี้ผิดเป็นรายช่อง แทนข้อความ error รวมช่องเดียว
-- **ลิสต์ที่ยาว (สินค้า, Sales Order, Invoice, Inventory Movement) มีช่องค้นหาแบบ client-side** (`searchKeyword` + computed `filteredXList`) เพราะข้อมูลถูกโหลดมาทั้งหมดอยู่แล้ว ไม่ต้องยิง API ซ้ำ
-- **`BaseDialog` มี focus trap ในตัว** — เปิดแล้ว focus จะเข้าไปใน dialog อัตโนมัติ และคืน focus ให้ปุ่มที่เปิดตอนปิด ไม่ต้องจัดการเอง
+| แนวทาง | รายละเอียด |
+|---|---|
+| **แจ้งผลลัพธ์ทุก action ด้วย toast** | `useToastStore().push(message, 'success' \| 'destructive')` หลัง action สำเร็จเสมอ — ห้ามปิด dialog เงียบ ๆ |
+| **ยืนยันก่อน action ทำลายข้อมูล** | `useConfirmStore().ask({ title, message, confirmText, danger })` (คืน `Promise<boolean>`) แทน `window.confirm` — บอก impact ได้ (เช่น จำนวนสินค้าที่ผูกกับหมวดหมู่ที่จะลบ) |
+| **Validation รายช่องในฟอร์ม** | ใช้ prop `error` ของ `BaseInput` / `BaseInputNumber` / `BaseCombobox` ชี้ผิดเป็นรายช่อง แทนข้อความ error รวมช่องเดียว |
+| **ค้นหาแบบ client-side ในลิสต์ยาว** | `searchKeyword` + computed `filteredXList` เพราะข้อมูลถูกโหลดมาทั้งหมดอยู่แล้ว ไม่ยิง API ซ้ำ |
+| **Dialog เข้าถึงได้ด้วยคีย์บอร์ดเต็มรูปแบบ** | `BaseDialog` มี focus trap ในตัว — เปิดแล้ว focus เข้า dialog อัตโนมัติ, `Escape` ปิดได้, คืน focus ให้ trigger ตอนปิด |
 
 ## Scripts
 
 ```sh
 npm install
-npm run dev        # start dev server (Vite)
+npm run dev        # start dev server (Vite) — http://localhost:5173
 npm run build       # type-check (vue-tsc) แล้ว build
 npm run preview     # preview production build
 ```
 
 ## Environment
 
-ตั้งค่า `VITE_API_BASE_URL` ผ่านไฟล์ `.env` (ยังไม่มีไฟล์ `.env.example` ในโปรเจกต์) ถ้าไม่ตั้งค่า ระบบจะ fallback ไปที่ `http://localhost:4000/api`
+ตั้งค่าผ่านไฟล์ `.env` (copy จาก `.env.example`):
+
+| ตัวแปร | ค่าเริ่มต้นถ้าไม่ตั้งค่า | ใช้ทำอะไร |
+|---|---|---|
+| `VITE_API_BASE_URL` | `http://localhost:4000/api` | Base URL ของ Backend API |
+| `VITE_APP_NAME` | `Inventory & Stock` | ชื่อระบบที่แสดงบน Sidebar |

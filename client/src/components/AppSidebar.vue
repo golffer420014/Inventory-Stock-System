@@ -195,7 +195,6 @@ onMounted(() => {
 
     <div class="sidebar-footer">
       <ThemeToggle
-        v-if="!isCollapsed"
         :model-value="themeStore.isDark"
         @update:model-value="ev.onToggleTheme"
       />
