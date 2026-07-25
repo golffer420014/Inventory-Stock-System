@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import Handlebars from 'handlebars'
-import puppeteer, { type Browser } from 'puppeteer'
+import chromium from '@sparticuz/chromium'
+import puppeteer, { type Browser } from 'puppeteer-core'
+import { env } from '@/config/env.js'
 import { toThaiBahtText } from './thaiBahtText.util.js'
 
 /** ใช้ในเทมเพลตเป็น {{formatDate someDate}} จัดรูปแบบวันเวลาเป็นภาษาไทย เช่น "18 ก.ค. 2569 21:08" */
@@ -38,10 +40,28 @@ export const loadTemplate = (name: string): string => {
 
 let browserPromise: Promise<Browser> | null = null
 
-/** ใช้ Chromium instance เดียวซ้ำทุก request กัน overhead เปิด/ปิด browser ทุกครั้งที่ export PDF */
-const getBrowser = (): Promise<Browser> => {
+/**
+ * ใช้ Chromium instance เดียวซ้ำทุก request กัน overhead เปิด/ปิด browser ทุกครั้งที่ export PDF
+ * production (Vercel serverless) ใช้ @sparticuz/chromium ที่ bundle ไบนารีขนาดเล็กพอสำหรับ serverless function
+ * dev ใช้ Chromium เต็มที่ดาวน์โหลดมากับ devDependency `puppeteer` ผ่าน executablePath ของมัน
+ */
+const getBrowser = async (): Promise<Browser> => {
   if (!browserPromise) {
-    browserPromise = puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] })
+    browserPromise =
+      env.nodeEnv === 'production'
+        ? puppeteer.launch({
+            args: chromium.args,
+            executablePath: await chromium.executablePath(),
+            headless: true,
+          })
+        : (async () => {
+            const { default: devPuppeteer } = await import('puppeteer')
+            return puppeteer.launch({
+              executablePath: await devPuppeteer.executablePath(),
+              headless: true,
+              args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            })
+          })()
   }
   return browserPromise
 }
