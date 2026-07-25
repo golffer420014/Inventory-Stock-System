@@ -29,21 +29,21 @@ const modeConfig: Record<
   { title: string; buttonLabel: string; quantityLabel: string; successText: string; invalidText: string }
 > = {
   IN: {
-    title: 'Stock In — รับสินค้าเข้าคลัง',
+    title: 'Stock In - รับสินค้าเข้าคลัง',
     buttonLabel: '+ บันทึกรับเข้า',
     quantityLabel: 'จำนวนที่รับเข้า',
     successText: 'บันทึกรับสินค้าเข้าคลังสำเร็จ',
     invalidText: 'กรุณาเลือกสินค้าและระบุจำนวนที่รับเข้าให้ถูกต้อง',
   },
   OUT: {
-    title: 'Stock Out — เบิกสินค้าออกจากคลัง',
+    title: 'Stock Out - เบิกสินค้าออกจากคลัง',
     buttonLabel: '+ บันทึกเบิกออก',
     quantityLabel: 'จำนวนที่เบิกออก',
     successText: 'บันทึกเบิกสินค้าออกสำเร็จ',
     invalidText: 'กรุณาเลือกสินค้าและระบุจำนวนที่เบิกออกให้ถูกต้อง',
   },
   ADJUSTMENT: {
-    title: 'Stock Adjustment — ปรับปรุงจำนวนสินค้า',
+    title: 'Stock Adjustment - ปรับปรุงจำนวนสินค้า',
     buttonLabel: '+ ปรับปรุงจำนวนสินค้า',
     quantityLabel: 'จำนวนที่ปรับ',
     successText: 'บันทึกปรับปรุงจำนวนสินค้าสำเร็จ',

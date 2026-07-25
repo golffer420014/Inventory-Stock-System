@@ -9,7 +9,7 @@ const parseNote = (body: Record<string, unknown>): string | undefined =>
   typeof body.note === 'string' && body.note.trim() ? body.note.trim() : undefined
 
 /**
- * ใช้กับ Stock In / Stock Out — quantity ต้องเป็นจำนวนบวกเท่านั้น (ทิศทางกำหนดโดย type ของ movement)
+ * ใช้กับ Stock In / Stock Out - quantity ต้องเป็นจำนวนบวกเท่านั้น (ทิศทางกำหนดโดย type ของ movement)
  */
 const parseMovementInput = (body: Record<string, unknown>): iStockMovementInput | null => {
   const productId = Number(body.productId)
@@ -21,7 +21,7 @@ const parseMovementInput = (body: Record<string, unknown>): iStockMovementInput 
 }
 
 /**
- * ใช้กับ Stock Adjustment — quantity เป็นส่วนต่างที่จะปรับ เป็นบวก (เพิ่ม) หรือลบ (ลด) ก็ได้ แต่ต้องไม่เท่ากับ 0
+ * ใช้กับ Stock Adjustment - quantity เป็นส่วนต่างที่จะปรับ เป็นบวก (เพิ่ม) หรือลบ (ลด) ก็ได้ แต่ต้องไม่เท่ากับ 0
  */
 const parseAdjustmentInput = (body: Record<string, unknown>): iStockAdjustmentInput | null => {
   const productId = Number(body.productId)

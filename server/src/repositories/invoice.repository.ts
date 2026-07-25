@@ -41,7 +41,7 @@ const mapDetailRow = (row: InvoiceDetailRow): iInvoiceDetail => ({
 
 export const invoiceRepository = {
   /**
-   * รายการ Invoice ทั้งหมด พร้อมรายการสินค้า — items ดึงจาก sales_order_items ของ sales order ที่ผูกกัน
+   * รายการ Invoice ทั้งหมด พร้อมรายการสินค้า - items ดึงจาก sales_order_items ของ sales order ที่ผูกกัน
    * (ไม่มี invoice_items แยก เพราะรายการสินค้าคงที่ตั้งแต่ตอนยืนยันคำสั่งขายแล้ว)
    */
   findAll: async (): Promise<iInvoice[]> => {
@@ -63,7 +63,7 @@ export const invoiceRepository = {
   },
 
   /**
-   * Invoice เดียวแบบละเอียด พร้อม SKU/ชื่อสินค้า และเลขที่ Sales Order — ใช้สำหรับพิมพ์เป็นเอกสาร PDF
+   * Invoice เดียวแบบละเอียด พร้อม SKU/ชื่อสินค้า และเลขที่ Sales Order - ใช้สำหรับพิมพ์เป็นเอกสาร PDF
    */
   findById: async (id: number): Promise<iInvoiceDetail | null> => {
     const result = await pool.query<InvoiceDetailRow>(

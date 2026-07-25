@@ -29,7 +29,7 @@ const items = computed<iRenderToast[]>(() => [
       key: `low-stock-${toast.id}`,
       kind: 'lowStock',
       title: 'สินค้าใกล้หมด',
-      detail: `[${toast.sku}] ${toast.name} — เหลือ ${toast.stockQuantity} หน่วย`,
+      detail: `[${toast.sku}] ${toast.name} - เหลือ ${toast.stockQuantity} หน่วย`,
       onClose: () => notificationStore.dismiss(toast.id),
     })
   ),

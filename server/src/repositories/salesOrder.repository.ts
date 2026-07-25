@@ -14,7 +14,7 @@ interface SalesOrderRow {
 
 /**
  * ใช้ LEFT JOIN LATERAL แยก aggregate ของ items กับ payments คนละ subquery
- * เพราะทั้งคู่เป็น one-to-many กับ sales_orders — ถ้า LEFT JOIN ตรง ๆ พร้อมกันสองตาราง
+ * เพราะทั้งคู่เป็น one-to-many กับ sales_orders - ถ้า LEFT JOIN ตรง ๆ พร้อมกันสองตาราง
  * จะเกิด cartesian product (เช่น 2 items x 3 payments = 6 แถว) ทำให้ json_agg นับซ้ำผิด
  */
 const ORDER_WITH_ITEMS_QUERY = `
@@ -134,7 +134,7 @@ export const salesOrderRepository = {
   },
 
   /**
-   * แนบไฟล์หลักฐานการชำระเงินให้ Sales Order (ทำได้เฉพาะสถานะ CONFIRMED — ยืนยันคำสั่งขาย/ออก Invoice ก่อน แล้วค่อยจ่ายเงินและแนบหลักฐาน
+   * แนบไฟล์หลักฐานการชำระเงินให้ Sales Order (ทำได้เฉพาะสถานะ CONFIRMED - ยืนยันคำสั่งขาย/ออก Invoice ก่อน แล้วค่อยจ่ายเงินและแนบหลักฐาน
    * ต้องแนบก่อนคลังจะดำเนินการตัดสต๊อกได้)
    */
   addPayment: async (id: number, fileUrl: string, fileName: string): Promise<iSalesOrder> => {
@@ -162,7 +162,7 @@ export const salesOrderRepository = {
 
   /**
    * ยืนยันคำสั่งขาย (DRAFT -> CONFIRMED) แล้วสร้าง Invoice จากยอดรวมของคำสั่งขายนี้อัตโนมัติ
-   * ยังไม่ต้องมีหลักฐานการชำระเงินตอนนี้ — Invoice คือใบแจ้งหนี้ที่ออกก่อนลูกค้าจะจ่ายเงิน
+   * ยังไม่ต้องมีหลักฐานการชำระเงินตอนนี้ - Invoice คือใบแจ้งหนี้ที่ออกก่อนลูกค้าจะจ่ายเงิน
    */
   confirm: async (id: number): Promise<iSalesOrder> => {
     const client = await pool.connect()

@@ -42,7 +42,7 @@ export const useSalesOrderStore = defineStore('salesOrder', {
     },
 
     /**
-     * แนบไฟล์หลักฐานการชำระเงินให้ Sales Order — อัปโหลดไฟล์ก่อนแล้วค่อยบันทึก URL ผูกกับคำสั่งขาย แล้วอัปเดต list ทันที
+     * แนบไฟล์หลักฐานการชำระเงินให้ Sales Order - อัปโหลดไฟล์ก่อนแล้วค่อยบันทึก URL ผูกกับคำสั่งขาย แล้วอัปเดต list ทันที
      */
     async attachPayment(id: number, file: File) {
       const uploaded = await uploadService.uploadImage(file)

@@ -5,9 +5,9 @@
 <h1>📦 Inventory & Stock System</h1>
 
 <p>
-ระบบบริหารจัดการการขายและคลังสินค้า (Mini ERP) — จำลอง Workflow จริงของธุรกิจตั้งแต่<br/>
+ระบบบริหารจัดการการขายและคลังสินค้า (Mini ERP) - จำลอง Workflow จริงของธุรกิจตั้งแต่<br/>
 <b>สร้าง Sales Order → ออก Invoice → แนบหลักฐานการชำระเงิน → ตัดสต๊อก → รายงานผล</b><br/>
-ออกแบบและพัฒนาเองทั้งระบบ ตั้งแต่ Database Schema, Business Logic, Role Permission ไปจนถึง UI/UX
+ออกแบบและพัฒนาทั้งระบบ ตั้งแต่ Database Schema, Business Logic, Role Permission ไปจนถึง UI/UX
 </p>
 
 <p>
@@ -28,7 +28,7 @@
 
 ## สารบัญ
 
-- [ทำไมโปรเจกต์นี้ถึงน่าสนใจ](#-ทำไมโปรเจกต์นี้ถึงน่าสนใจ)
+- [Overview](#-overview)
 - [ภาพหน้าจอ](#-ภาพหน้าจอ)
 - [ขอบเขตระบบ](#-ขอบเขตระบบ-system-scope)
 - [Business Workflow](#-business-workflow)
@@ -41,17 +41,17 @@
 
 ---
 
-## ✨ ทำไมโปรเจกต์นี้ถึงน่าสนใจ
+## 🔎 Overview
 
-โปรเจกต์นี้ไม่ใช่แค่ CRUD ธรรมดา แต่จำลองปัญหาจริงที่ระบบ ERP/Business Application ต้องเจอ:
+ไม่ใช่ CRUD ตัวอย่างทั่วไป แต่เป็น Mini ERP ที่จำลองปัญหาจริงของธุรกิจ - **ออกแบบ business logic, permission, และสถาปัตยกรรมเองทั้งหมด**
 
-- 🔗 **Business Workflow ที่มี state machine จริง** — Sales Order มีสถานะ `DRAFT → CONFIRMED → FULFILLED / CANCELLED` พร้อม **business rule ที่ผมออกแบบเอง**: ต้องแนบไฟล์หลักฐานการชำระเงินอย่างน้อย 1 ไฟล์ก่อนคลังจะตัดสต๊อกได้ (ไม่ใช่ก่อน Confirm) — จำลอง flow ออกใบแจ้งหนี้ → ลูกค้าจ่ายเงิน → แนบหลักฐาน → คลังส่งของ ที่ตรงกับธุรกิจจริง
-- 🔐 **Role-Based Permission บังคับ 2 ชั้น** — ทั้งฝั่ง Server (middleware `requireRole` ที่ทุก route) และฝั่ง Client (ซ่อน/disable UI ตาม role) ตรวจสอบตรงกันครบทั้ง 4 role, 39+ จุดตรวจสอบ
-- ⚡ **แจ้งเตือนสินค้าใกล้หมดแบบ near real-time ที่ออกแบบมาให้รอด serverless** — เริ่มแรกทำด้วย Server-Sent Events + EventEmitter ในหน่วยความจำ แต่พบว่าใช้งานจริงบน serverless (Vercel) ไม่ได้ เพราะแต่ละ request อาจไปคนละ instance กัน จึงรีดีไซน์เป็น polling ทุก 15 วินาทีพร้อม diff สต๊อกฝั่ง client แทน — เป็นการตัดสินใจที่ผ่านการทดสอบจริงแล้วแก้ปัญหา ไม่ใช่แค่เลือกเทคโนโลยีที่ดูดีบนกระดาษ
-- 🧾 **PDF Generation Pipeline ของจริง** — Invoice และ Report ทุกใบ generate เป็น PDF จริงผ่าน Puppeteer + Handlebars จัดหน้าแบบเอกสารทางการ (header บริษัท, ตาราง, ยอดเงินแปลงเป็น**ตัวอักษรภาษาไทยอัตโนมัติ** เช่น "หนึ่งหมื่นแปดพันเก้าร้อยบาทถ้วน")
-- 🏗️ **Layered Architecture ที่แยกชั้นชัดเจน** — `Route → Controller → Service → Repository` ทั้งฝั่ง Backend และ `View → Store → Service → HTTP` ทั้งฝั่ง Frontend ทำให้ business logic ไม่ปนกับการเข้าถึงข้อมูลหรือ UI
-- ♿ **ใส่ใจ UX/Accessibility ระดับ production** — focus trap ใน dialog, คืน focus ให้ปุ่มเดิมตอนปิด, toast แจ้งผลทุก action, validation รายช่องในฟอร์ม, confirm dialog แทน `window.confirm` ทั้งระบบ
-- ✅ **ทดสอบ workflow จริงแบบ End-to-End เอง** — ไม่ใช่แค่เช็คว่า route ตอบ 200 แต่ตรวจเนื้อหาไฟล์ PDF ที่ generate จริงด้วย `pdftotext` และไล่ทดสอบสิทธิ์ตาม Role ครบทุก role ทั้งฝั่ง Server (API) และ Client (UI)
+| | จุดเด่น | รายละเอียด |
+|:---:|---|---|
+| 🔗 | **Business rule ที่ออกแบบเอง ไม่ใช่ CRUD** | Sales Order ต้องแนบหลักฐานชำระเงินก่อนตัดสต๊อก (ไม่ใช่ก่อน Confirm) จำลอง flow วางบิล → รับเงิน → ส่งของ ของธุรกิจจริง |
+| 🔐 | **Permission บังคับ 2 ชั้น** | Server middleware + ซ่อน/disable UI ฝั่ง Client ตรงกันครบ 4 role |
+| ⚡ | **แก้ปัญหา serverless จริง** | เริ่มด้วย SSE แล้วพบว่าใช้ไม่ได้บน Vercel (คนละ instance ต่อ request) จึงรีดีไซน์เป็น polling |
+| 🧾 | **PDF pipeline ใช้งานได้จริง** | Puppeteer + Handlebars, ยอดเงินแปลงเป็นตัวอักษรภาษาไทยอัตโนมัติ |
+| 🏗️ | **Layered Architecture ทั้ง 2 ฝั่ง** | Route→Controller→Service→Repository / View→Store→Service→HTTP |
 
 ---
 
@@ -63,22 +63,22 @@
 <td width="50%"><img src="docs/screenshots/dashboard-dark.png" alt="Dashboard (Dark)" /></td>
 </tr>
 <tr>
-<td align="center"><sub>Dashboard — Light Theme</sub></td>
-<td align="center"><sub>Dashboard — Dark Theme (สลับได้จากปุ่มมุมล่างของ Sidebar)</sub></td>
+<td align="center"><sub>Dashboard - Light Theme</sub></td>
+<td align="center"><sub>Dashboard - Dark Theme (สลับได้จากปุ่มมุมล่างของ Sidebar)</sub></td>
 </tr>
 <tr>
 <td width="50%"><img src="docs/screenshots/sales-orders-light.png" alt="Sales Order" /></td>
 <td width="50%"><img src="docs/screenshots/products-light.png" alt="Product Management" /></td>
 </tr>
 <tr>
-<td align="center"><sub>Sales Order — เห็นสถานะ, gate การแนบไฟล์ก่อน Fulfill, ปุ่ม Preview Invoice</sub></td>
-<td align="center"><sub>Product Management — จัดการสินค้า/หมวดหมู่ พร้อมรูปภาพ</sub></td>
+<td align="center"><sub>Sales Order - เห็นสถานะ, gate การแนบไฟล์ก่อน Fulfill, ปุ่ม Preview Invoice</sub></td>
+<td align="center"><sub>Product Management - จัดการสินค้า/หมวดหมู่ พร้อมรูปภาพ</sub></td>
 </tr>
 <tr>
 <td colspan="2"><img src="docs/screenshots/inventory-light.png" alt="Inventory Movement" /></td>
 </tr>
 <tr>
-<td colspan="2" align="center"><sub>Inventory Movement — ประวัติการเคลื่อนไหวสต๊อกทุกประเภท (In/Out/Adjustment) พร้อมอ้างอิง Sales Order ต้นทาง</sub></td>
+<td colspan="2" align="center"><sub>Inventory Movement - ประวัติการเคลื่อนไหวสต๊อกทุกประเภท (In/Out/Adjustment) พร้อมอ้างอิง Sales Order ต้นทาง</sub></td>
 </tr>
 </table>
 
@@ -89,16 +89,16 @@
 ระบบประกอบด้วย 4 module หลัก ทำงานต่อเนื่องกันเป็น workflow เดียว:
 
 <details open>
-<summary><b>1. Product Management (Sales)</b> — จัดการข้อมูลสินค้า</summary>
+<summary><b>1. Product Management (Sales)</b> - จัดการข้อมูลสินค้า</summary>
 
 - ดูข้อมูลสินค้า, ค้นหาสินค้า (ชื่อ/ยี่ห้อ/SKU)
 - ตรวจสอบราคาสินค้าและจำนวน Stock คงเหลือ
-- จัดการหมวดหมู่สินค้า (เพิ่ม/ลบ) — ใช้สร้างเลข SKU อัตโนมัติตาม prefix ของหมวดหมู่
+- จัดการหมวดหมู่สินค้า (เพิ่ม/ลบ) - ใช้สร้างเลข SKU อัตโนมัติตาม prefix ของหมวดหมู่
 - เพิ่ม/แก้ไขสินค้า พร้อมอัปโหลดรูปภาพสินค้า (preview ขนาดเต็ม, คลิกดูรูปจริงได้)
 </details>
 
 <details>
-<summary><b>2. Inventory Management (Warehouse)</b> — จัดการคลังสินค้า</summary>
+<summary><b>2. Inventory Management (Warehouse)</b> - จัดการคลังสินค้า</summary>
 
 - รับสินค้าเข้า (Stock In) / เบิกสินค้าออก (Stock Out) / ปรับปรุงจำนวนสินค้า (Stock Adjustment) ผ่าน dialog เดียว
 - ดูประวัติการเคลื่อนไหวของสินค้า (Inventory Movement) พร้อมค้นหาจากชื่อ/SKU/หมายเหตุ
@@ -106,7 +106,7 @@
 </details>
 
 <details>
-<summary><b>3. Sales Order & Invoice</b> — คำสั่งขายและเอกสารทางการขาย</summary>
+<summary><b>3. Sales Order & Invoice</b> - คำสั่งขายและเอกสารทางการขาย</summary>
 
 - สร้าง Sales Order ผ่าน Dialog เพิ่มรายการสินค้าได้หลายบรรทัด (กันเลือกสินค้าซ้ำในออเดอร์เดียว) พร้อมแสดงรูป/สต๊อกคงเหลือประกอบการเลือก และคำนวณยอดรวมอัตโนมัติ
 - ยืนยันคำสั่งขาย (Confirm) → สร้าง Invoice อัตโนมัติ
@@ -118,7 +118,7 @@
 </details>
 
 <details>
-<summary><b>4. Dashboard & Reporting</b> — ภาพรวมและรายงาน</summary>
+<summary><b>4. Dashboard & Reporting</b> - ภาพรวมและรายงาน</summary>
 
 - KPI Card: ยอดขาย, จำนวนสินค้า, Stock คงเหลือ, สินค้าใกล้หมด
 - กราฟ Stock คงเหลือแยกตามสินค้า และกราฟสรุปการเคลื่อนไหวสต๊อก (ECharts)
@@ -153,7 +153,7 @@ stateDiagram-v2
 
 ## 🔑 Demo Role & Permission Matrix
 
-ระบบใช้ **Demo Role** (ยังไม่มีระบบ Login จริง) จำลองการทำงานของแต่ละฝ่ายผ่าน header `x-demo-role` — สลับ role ทดสอบสิทธิ์ได้จากมุมขวาบนของทุกหน้า
+ระบบใช้ **Demo Role** (ยังไม่มีระบบ Login จริง) จำลองการทำงานของแต่ละฝ่ายผ่าน header `x-demo-role` - สลับ role ทดสอบสิทธิ์ได้จากมุมขวาบนของทุกหน้า
 
 | Feature | Admin | Sales | Warehouse | Viewer |
 |---|:---:|:---:|:---:|:---:|
@@ -169,7 +169,7 @@ stateDiagram-v2
 | แจ้งเตือนสินค้าใกล้หมด (near real-time) | ✅ | ✅ | ✅ | ✅ |
 | Report | ✅ | ✅ | ✅ | ✅ |
 
-`✅ ใช้งานได้` · `👁️ ดูอย่างเดียว` · `❌ ไม่มีสิทธิ์` — บังคับสิทธิ์ทั้งฝั่ง Server (middleware `requireRole`) และฝั่ง Client (UI)
+`✅ ใช้งานได้` · `👁️ ดูอย่างเดียว` · `❌ ไม่มีสิทธิ์` - บังคับสิทธิ์ทั้งฝั่ง Server (middleware `requireRole`) และฝั่ง Client (UI)
 
 ---
 
@@ -181,11 +181,9 @@ stateDiagram-v2
 | **Backend** | Node.js, Express, TypeScript (`tsx`) |
 | **Database** | PostgreSQL ผ่าน [Supabase](https://supabase.com) (คุยผ่าน `pg` โดยตรง ไม่ใช้ ORM) |
 | **Document/PDF** | Puppeteer + Handlebars (Invoice, Sales/Inventory Report) |
-| **Notification** | Polling ทุก 15 วินาที + diff ฝั่ง client (แจ้งเตือนสินค้าใกล้หมด — เดิมใช้ SSE แต่ปรับเพราะใช้ไม่ได้บน serverless) |
+| **Notification** | Polling ทุก 15 วินาที + diff ฝั่ง client (แจ้งเตือนสินค้าใกล้หมด - เดิมใช้ SSE แต่ปรับเพราะใช้ไม่ได้บน serverless) |
 | **File Upload** | Multer (รูปสินค้า, สลิปหลักฐานการชำระเงิน) |
 | **Deployment** | Vercel (Frontend), Supabase (Database) |
-
-> Redis เตรียม config ไว้สำหรับ cache ในอนาคต ยังไม่ได้เชื่อมต่อใช้งานจริง
 
 ---
 
@@ -234,10 +232,10 @@ cp .env.example .env
 ### 3) รันโปรเจกต์ (2 terminal)
 
 ```sh
-# Terminal 1 — Backend (http://localhost:4000)
+# Terminal 1 - Backend (http://localhost:4000)
 cd server && npm run dev
 
-# Terminal 2 — Frontend (http://localhost:5173)
+# Terminal 2 - Frontend (http://localhost:5173)
 cd client && npm run dev
 ```
 
@@ -251,8 +249,8 @@ cd client && npm run dev
 
 ```
 Inventory-Stock-System/
-├── client/              # Frontend — Vue 3 + TypeScript (client/README.md)
-├── server/              # Backend — Node.js + Express + TypeScript (server/README.md)
+├── client/              # Frontend - Vue 3 + TypeScript (client/README.md)
+├── server/              # Backend - Node.js + Express + TypeScript (server/README.md)
 │   └── database/
 │       ├── migrations/  # SQL schema migration
 │       └── seeds/       # ข้อมูลตั้งต้นสำหรับทดสอบ
@@ -274,7 +272,7 @@ MVP ครบ 4 module หลักตาม System Scope แล้ว ทดส
 - Sales Order & Invoice workflow แบบเต็ม (Create → Confirm → แนบไฟล์การชำระเงิน → Fulfill → ตัดสต๊อก)
 - Invoice PDF generation รายใบ, Sales/Inventory Report พร้อม Export CSV และ PDF
 - Dashboard พร้อมกราฟ (ECharts) และ KPI Card
-- แจ้งเตือนสินค้าใกล้หมดแบบ near real-time (polling) — ออกแบบใหม่ให้รองรับ serverless หลังพบว่า SSE เดิมใช้ไม่ได้บน Vercel
+- แจ้งเตือนสินค้าใกล้หมดแบบ near real-time (polling) - ออกแบบใหม่ให้รองรับ serverless หลังพบว่า SSE เดิมใช้ไม่ได้บน Vercel
 - หน้าแรก (Home) แนะนำ workflow แบบ step-by-step สำหรับผู้ใช้ใหม่
 - Usability pass ทั่วระบบ: toast, confirm dialog, validation รายช่อง, focus trap, ค้นหาในลิสต์ยาว
 - จัดรูปแบบ PDF ใหม่เป็นเอกสารทางการ (header บริษัท, ยอดเงินเป็นตัวอักษรภาษาไทยอัตโนมัติ)
@@ -289,5 +287,5 @@ MVP ครบ 4 module หลักตาม System Scope แล้ว ทดส
 - Accounting Module
 - Payment Gateway Integration / การกระทบยอดชำระเงินแบบเต็มรูปแบบ
 - Audit Log
-- ข้อมูลบริษัทใน PDF (ชื่อ/ที่อยู่/เลขผู้เสียภาษี/บัญชีธนาคาร) ยังเป็นค่า placeholder — ยังไม่มีที่เก็บข้อมูลบริษัทจริงในระบบ
+- ข้อมูลบริษัทใน PDF (ชื่อ/ที่อยู่/เลขผู้เสียภาษี/บัญชีธนาคาร) ยังเป็นค่า placeholder - ยังไม่มีที่เก็บข้อมูลบริษัทจริงในระบบ
 </details>

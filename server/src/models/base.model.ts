@@ -18,7 +18,7 @@ const snakeToCamel = (key: string): string => key.replace(/_([a-z])/g, (_match, 
  * ชื่อ field <-> ชื่อ column แปลงให้อัตโนมัติตาม naming convention (camelCase <-> snake_case) ไม่ต้องเขียน mapRow เอง
  *
  * ทุก method รับ `executor` (PoolClient) แทน pool ได้เสมอ เพื่อให้ใช้งานร่วมกับ transaction (BEGIN/COMMIT/FOR UPDATE)
- * ของ repository เดิมได้ — Model ไม่ผูกกับ pool ตรง ๆ
+ * ของ repository เดิมได้ - Model ไม่ผูกกับ pool ตรง ๆ
  */
 export abstract class Model {
   /** ยังไม่ผ่าน hydrate/save = undefined เสมอ ถึงจะประกาศเป็น number (ใช้เช็คว่าเป็นแถวใหม่ใน save()) */
@@ -29,7 +29,7 @@ export abstract class Model {
   /** field ที่ห้ามส่งเข้า INSERT/UPDATE เอง เพราะ DB จัดการให้ (serial id, timestamp default) */
   static readonlyFields: string[] = ['id', 'createdAt', 'updatedAt']
 
-  /** column ที่เป็น NUMERIC/DECIMAL ใน DB — pg driver คืนค่าเป็น string เสมอ (กัน precision หาย) ต้องแปลงเป็น number เอง */
+  /** column ที่เป็น NUMERIC/DECIMAL ใน DB - pg driver คืนค่าเป็น string เสมอ (กัน precision หาย) ต้องแปลงเป็น number เอง */
   static numericFields: string[] = []
 
   private static hydrate<T extends typeof Model>(this: T, row: Record<string, unknown>): InstanceType<T> {

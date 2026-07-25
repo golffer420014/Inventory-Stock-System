@@ -136,7 +136,7 @@ onMounted(() => {
         <p class="empty-hint">
           {{
             invoiceStore.invoiceList.length === 0
-              ? 'ยังไม่มี Invoice — Invoice จะถูกสร้างอัตโนมัติเมื่อยืนยัน Sales Order'
+              ? 'ยังไม่มี Invoice - Invoice จะถูกสร้างอัตโนมัติเมื่อยืนยัน Sales Order'
               : `ไม่พบ Invoice ที่ตรงกับ "${searchKeyword}"`
           }}
         </p>

@@ -11,7 +11,7 @@ CREATE TABLE sales_orders (
 );
 
 COMMENT ON COLUMN sales_orders.id           IS 'รหัส Sales Order';
-COMMENT ON COLUMN sales_orders.order_number IS 'เลขที่คำสั่งขาย สร้างอัตโนมัติจาก id หลัง insert (เช่น SO-000001) — ปล่อย NULL ชั่วคราวระหว่าง insert เพื่อเลี่ยงชน UNIQUE (Postgres ยอมให้ NULL ซ้ำได้)';
+COMMENT ON COLUMN sales_orders.order_number IS 'เลขที่คำสั่งขาย สร้างอัตโนมัติจาก id หลัง insert (เช่น SO-000001) - ปล่อย NULL ชั่วคราวระหว่าง insert เพื่อเลี่ยงชน UNIQUE (Postgres ยอมให้ NULL ซ้ำได้)';
 COMMENT ON COLUMN sales_orders.status       IS 'สถานะ: DRAFT=ร่าง, CONFIRMED=ยืนยันแล้ว (มี Invoice แล้ว), FULFILLED=ตัดสต๊อกแล้ว, CANCELLED=ยกเลิก';
 COMMENT ON COLUMN sales_orders.total_amount IS 'ยอดรวมของคำสั่งขาย คำนวณจากรายการสินค้า';
 COMMENT ON COLUMN sales_orders.created_at   IS 'วันเวลาที่สร้างคำสั่งขาย';

@@ -14,7 +14,7 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
 }
 
 /**
- * เปิด print preview ของไฟล์ PDF ด้วย printJS — โหลดผ่าน base64 แทนการยิง URL ตรง ๆ
+ * เปิด print preview ของไฟล์ PDF ด้วย printJS - โหลดผ่าน base64 แทนการยิง URL ตรง ๆ
  * เพราะ printJS fetch เองไม่รู้จัก header x-demo-role ที่ API ต้องการ (ต้องดึงไฟล์ผ่าน axios ก่อนแล้วค่อยส่งต่อ)
  */
 export const previewPdf = async (blob: Blob, documentTitle: string): Promise<void> => {

@@ -16,7 +16,7 @@ export const app = express()
 
 // helmet's type declarations resolve inconsistently across environments (NodeNext dual-package
 // resolution), sometimes typing the default export as non-callable even though it is callable
-// at runtime — cast through unknown to decouple from whichever declaration file gets picked.
+// at runtime - cast through unknown to decouple from whichever declaration file gets picked.
 const helmet = helmetModule.default as unknown as (options?: Record<string, unknown>) => RequestHandler
 
 // crossOriginResourcePolicy: cross-origin เพราะ client (5173) ต้องโหลดรูปจาก server (4000) คนละ origin

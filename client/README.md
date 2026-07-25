@@ -1,4 +1,4 @@
-# Client — Inventory & Stock System (Frontend)
+# Client - Inventory & Stock System (Frontend)
 
 <p>
 <img alt="Vue 3" src="https://img.shields.io/badge/Vue_3-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white" />
@@ -18,18 +18,18 @@ Frontend ของระบบ Inventory & Stock System (Mini ERP) พัฒน�
 
 ## Stack
 
-- **Vue 3** — `<script setup lang="ts">` ล้วน
+- **Vue 3** - `<script setup lang="ts">` ล้วน
 - **TypeScript**
 - **Vue Router**
-- **Pinia** (Option Store เท่านั้น — ดูกฎด้านล่าง)
+- **Pinia** (Option Store เท่านั้น - ดูกฎด้านล่าง)
 - **Tailwind CSS v4**
-- **Lucide Vue** — icon
-- **ECharts** — กราฟ Dashboard
+- **Lucide Vue** - icon
+- **ECharts** - กราฟ Dashboard
 - **Vite**
 
 ## รูปแบบโครงสร้าง (Structure Pattern)
 
-โปรเจกต์นี้ใช้ **Feature-based folder ผสม Layered structure** — แบ่งโฟลเดอร์หลักตาม layer ก่อน (`views`, `components`, `stores`, `services`) แล้วค่อยแบ่งย่อยตาม domain ภายใน layer นั้น (`inventory`, `product`, `sales`, `dashboard`, `report`)
+โปรเจกต์นี้ใช้ **Feature-based folder ผสม Layered structure** - แบ่งโฟลเดอร์หลักตาม layer ก่อน (`views`, `components`, `stores`, `services`) แล้วค่อยแบ่งย่อยตาม domain ภายใน layer นั้น (`inventory`, `product`, `sales`, `dashboard`, `report`)
 
 ข้อมูลไหลทางเดียวเสมอในทุกหน้า:
 
@@ -65,7 +65,7 @@ client/
     │   └── ThemeToggle.vue    # ปุ่มสลับ Light/Dark theme
     │
     ├── layouts/
-    │   └── DefaultLayout.vue  # Layout หลัก (Sidebar + Breadcrumb + เนื้อหา) — mount BaseConfirmDialog/BaseToastStack ที่นี่
+    │   └── DefaultLayout.vue  # Layout หลัก (Sidebar + Breadcrumb + เนื้อหา) - mount BaseConfirmDialog/BaseToastStack ที่นี่
     │
     ├── views/                 # หน้าจอผูกกับ route โดยตรง (1 ไฟล์ = 1 หน้า)
     │   ├── dashboard/ inventory/ product/ report/ sales/
@@ -77,12 +77,12 @@ client/
     ├── stores/                 # Pinia (Option Store) แยกตามโดเมน
     │   ├── dashboard.ts inventory.ts invoice.ts product.ts category.ts report.ts salesOrder.ts
     │   ├── notification.ts     # toast แจ้งเตือนสินค้าใกล้หมด รับข้อมูลจาก useNotificationStream (polling)
-    │   ├── toast.ts             # toast ทั่วไป — useToastStore().push(message, variant)
-    │   ├── confirm.ts           # confirm dialog แบบ imperative — useConfirmStore().ask({...}) คืน Promise<boolean>
+    │   ├── toast.ts             # toast ทั่วไป - useToastStore().push(message, variant)
+    │   ├── confirm.ts           # confirm dialog แบบ imperative - useConfirmStore().ask({...}) คืน Promise<boolean>
     │   ├── role.ts              # Demo Role ปัจจุบันของผู้ใช้ (สลับสิทธิ์ทดสอบ)
     │   └── theme.ts             # สถานะ Light/Dark theme (persist ผ่าน localStorage)
     │
-    ├── services/               # HTTP layer แยกตามโดเมน — ไม่มี state, ไม่ผูกกับ Vue
+    ├── services/               # HTTP layer แยกตามโดเมน - ไม่มี state, ไม่ผูกกับ Vue
     │   ├── http.ts              # base URL, header (x-demo-role), error handling ร่วม
     │   └── dashboard/inventory/invoice/product/category/report/salesOrder/upload.service.ts
     │
@@ -95,7 +95,7 @@ client/
     │
     ├── types/                  # Type/Interface กลาง (prefix `i` = interface, `t` = type alias)
     ├── App.vue                 # Root component
-    ├── main.ts                  # Entry point — สร้าง app, ติดตั้ง Pinia/Router/directive
+    ├── main.ts                  # Entry point - สร้าง app, ติดตั้ง Pinia/Router/directive
     └── style.css                # Global style, CSS variable ของธีม (leather/brass), Tailwind entry
 ```
 
@@ -103,17 +103,17 @@ client/
 
 | แนวทาง | รายละเอียด |
 |---|---|
-| **แจ้งผลลัพธ์ทุก action ด้วย toast** | `useToastStore().push(message, 'success' \| 'destructive')` หลัง action สำเร็จเสมอ — ห้ามปิด dialog เงียบ ๆ |
-| **ยืนยันก่อน action ทำลายข้อมูล** | `useConfirmStore().ask({ title, message, confirmText, danger })` (คืน `Promise<boolean>`) แทน `window.confirm` — บอก impact ได้ (เช่น จำนวนสินค้าที่ผูกกับหมวดหมู่ที่จะลบ) |
+| **แจ้งผลลัพธ์ทุก action ด้วย toast** | `useToastStore().push(message, 'success' \| 'destructive')` หลัง action สำเร็จเสมอ - ห้ามปิด dialog เงียบ ๆ |
+| **ยืนยันก่อน action ทำลายข้อมูล** | `useConfirmStore().ask({ title, message, confirmText, danger })` (คืน `Promise<boolean>`) แทน `window.confirm` - บอก impact ได้ (เช่น จำนวนสินค้าที่ผูกกับหมวดหมู่ที่จะลบ) |
 | **Validation รายช่องในฟอร์ม** | ใช้ prop `error` ของ `BaseInput` / `BaseInputNumber` / `BaseCombobox` ชี้ผิดเป็นรายช่อง แทนข้อความ error รวมช่องเดียว |
 | **ค้นหาแบบ client-side ในลิสต์ยาว** | `searchKeyword` + computed `filteredXList` เพราะข้อมูลถูกโหลดมาทั้งหมดอยู่แล้ว ไม่ยิง API ซ้ำ |
-| **Dialog เข้าถึงได้ด้วยคีย์บอร์ดเต็มรูปแบบ** | `BaseDialog` มี focus trap ในตัว — เปิดแล้ว focus เข้า dialog อัตโนมัติ, `Escape` ปิดได้, คืน focus ให้ trigger ตอนปิด |
+| **Dialog เข้าถึงได้ด้วยคีย์บอร์ดเต็มรูปแบบ** | `BaseDialog` มี focus trap ในตัว - เปิดแล้ว focus เข้า dialog อัตโนมัติ, `Escape` ปิดได้, คืน focus ให้ trigger ตอนปิด |
 
 ## Scripts
 
 ```sh
 npm install
-npm run dev        # start dev server (Vite) — http://localhost:5173
+npm run dev        # start dev server (Vite) - http://localhost:5173
 npm run build       # type-check (vue-tsc) แล้ว build
 npm run preview     # preview production build
 ```
