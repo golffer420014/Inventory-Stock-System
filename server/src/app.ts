@@ -21,7 +21,7 @@ const helmet = helmetModule.default as unknown as (options?: Record<string, unkn
 
 // crossOriginResourcePolicy: cross-origin เพราะ client (5173) ต้องโหลดรูปจาก server (4000) คนละ origin
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
-app.use(cors({ origin: env.clientOrigin }))
+app.use(cors())
 if (env.nodeEnv !== 'test') {
   app.use(morgan('dev'))
 }

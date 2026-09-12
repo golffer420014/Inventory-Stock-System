@@ -101,7 +101,6 @@ Copy `.env.example` เป็น `.env` แล้วปรับค่าตา�
 | ตัวแปร | ใช้ทำอะไร |
 |---|---|
 | `PORT` | Port ที่ server รัน (default `4000`) |
-| `CLIENT_ORIGIN` | Origin ของ frontend สำหรับตั้งค่า CORS |
 | `DATABASE_URL` | Connection string ของ Supabase Postgres (ใช้ pooler connection ไม่ใช่ direct - direct เป็น IPv6-only) |
 | `SUPABASE_URL` / `SUPABASE_SECRET_KEY` | ต่อ Supabase Storage bucket `uploads` (service role key ใช้ bypass RLS ตอนอัปโหลดไฟล์) - ต้องสร้าง bucket นี้ไว้ล่วงหน้าเป็น public |
 | `SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_JWKS_URL` | เผื่อใช้ตอนต่อ authentication จริงในอนาคต (ปัจจุบันยังไม่ได้ใช้ - auth เป็น Demo Role) |
