@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import Handlebars from 'handlebars'
 import chromium from '@sparticuz/chromium'
@@ -22,6 +22,8 @@ Handlebars.registerHelper('formatBahtText', (value: number) => {
 })
 
 const TEMPLATES_DIR = fileURLToPath(new URL('../templates', import.meta.url))
+const THAI_FONT_SOURCE_PATH = fileURLToPath(new URL('../fonts/NotoSansThai.ttf', import.meta.url))
+const THAI_FONT_RUNTIME_PATH = '/tmp/fonts/NotoSansThai.ttf'
 
 const templateCache = new Map<string, string>()
 
@@ -41,6 +43,22 @@ export const loadTemplate = (name: string): string => {
 let browserPromise: Promise<Browser> | null = null
 
 /**
+ * @sparticuz/chromium มีฟอนต์ติดมาแค่ Open Sans (รองรับ Latin/Greek/Cyrillic เท่านั้น ไม่มีภาษาไทย)
+ * ทำให้ตัวอักษรไทยในเทมเพลตหายไปทั้งหมดตอน render PDF บน production (Vercel) ต้องคัดลอกฟอนต์ไทยเพิ่มไปไว้ที่
+ * /tmp/fonts (fontconfig ของ @sparticuz/chromium สแกนหาฟอนต์เพิ่มที่ path นี้โดยเฉพาะ)
+ *
+ * ต้องเรียกหลัง chromium.executablePath() เท่านั้น: path นี้คือที่เดียวกับที่ fonts.tar.br ของแพ็กเกจ (Open Sans +
+ * fontconfig) ถูกแตกไฟล์ลงไป ถ้าโฟลเดอร์นี้มีอยู่ก่อนแล้ว (เพราะเราสร้างเองก่อน) แพ็กเกจจะข้ามการแตกไฟล์ของมันไปเลย
+ * (เช็คแค่ว่าโฟลเดอร์มีอยู่ไหม ไม่เช็คเนื้อหา) ทำให้ Open Sans + fontconfig เดิมหายไปทั้งหมด
+ */
+const ensureThaiFont = (): void => {
+  if (existsSync(THAI_FONT_RUNTIME_PATH)) return
+
+  mkdirSync('/tmp/fonts', { recursive: true })
+  writeFileSync(THAI_FONT_RUNTIME_PATH, readFileSync(THAI_FONT_SOURCE_PATH))
+}
+
+/**
  * ใช้ Chromium instance เดียวซ้ำทุก request กัน overhead เปิด/ปิด browser ทุกครั้งที่ export PDF
  * production (Vercel serverless) ใช้ @sparticuz/chromium ที่ bundle ไบนารีขนาดเล็กพอสำหรับ serverless function
  * dev ใช้ Chromium เต็มที่ดาวน์โหลดมากับ devDependency `puppeteer` ผ่าน executablePath ของมัน
@@ -49,11 +67,15 @@ const getBrowser = async (): Promise<Browser> => {
   if (!browserPromise) {
     browserPromise =
       env.nodeEnv === 'production'
-        ? puppeteer.launch({
-            args: chromium.args,
-            executablePath: await chromium.executablePath(),
-            headless: true,
-          })
+        ? (async () => {
+            const executablePath = await chromium.executablePath()
+            ensureThaiFont()
+            return puppeteer.launch({
+              args: chromium.args,
+              executablePath,
+              headless: true,
+            })
+          })()
         : (async () => {
             const { default: devPuppeteer } = await import('puppeteer')
             return puppeteer.launch({

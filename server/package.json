@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json && cp -r src/templates dist/templates",
+    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json && cp -r src/templates dist/templates && cp -r fonts dist/fonts",
     "start": "node dist/server.js"
   },
   "dependencies": {
