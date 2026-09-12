@@ -143,33 +143,45 @@ onMounted(() => {
       @retry="ac.init"
     >
       <div v-if="dashboardStore.summary" class="dashboard-kpis">
-        <BaseCard class="kpi-card">
-          <Wallet :size="20" class="kpi-card__icon" :stroke-width="2" />
+        <BaseCard class="kpi-card" style="--card-delay: 0ms">
+          <span class="kpi-card__icon-badge">
+            <Wallet :size="20" :stroke-width="2.1" />
+          </span>
           <span class="kpi-card__label">ยอดขายรวม</span>
           <span class="kpi-card__value">{{ dashboardStore.summary.totalSalesAmount.toLocaleString() }} บาท</span>
         </BaseCard>
 
-        <BaseCard class="kpi-card">
-          <PackageSearch :size="20" class="kpi-card__icon" :stroke-width="2" />
+        <BaseCard class="kpi-card" style="--card-delay: 70ms">
+          <span class="kpi-card__icon-badge">
+            <PackageSearch :size="20" :stroke-width="2.1" />
+          </span>
           <span class="kpi-card__label">จำนวนสินค้า</span>
           <span class="kpi-card__value">{{ dashboardStore.summary.totalProducts.toLocaleString() }}</span>
         </BaseCard>
 
-        <BaseCard class="kpi-card">
-          <Boxes :size="20" class="kpi-card__icon" :stroke-width="2" />
+        <BaseCard class="kpi-card" style="--card-delay: 140ms">
+          <span class="kpi-card__icon-badge">
+            <Boxes :size="20" :stroke-width="2.1" />
+          </span>
           <span class="kpi-card__label">Stock คงเหลือ</span>
           <span class="kpi-card__value">{{ dashboardStore.summary.totalStockQuantity.toLocaleString() }}</span>
         </BaseCard>
 
-        <BaseCard class="kpi-card" :class="{ 'kpi-card--alert': dashboardStore.summary.lowStockProductCount > 0 }">
-          <TriangleAlert :size="20" class="kpi-card__icon" :stroke-width="2" />
+        <BaseCard
+          class="kpi-card"
+          :class="{ 'kpi-card--alert': dashboardStore.summary.lowStockProductCount > 0 }"
+          style="--card-delay: 210ms"
+        >
+          <span class="kpi-card__icon-badge">
+            <TriangleAlert :size="20" :stroke-width="2.1" />
+          </span>
           <span class="kpi-card__label">สินค้าใกล้หมด</span>
           <span class="kpi-card__value">{{ dashboardStore.summary.lowStockProductCount.toLocaleString() }}</span>
         </BaseCard>
       </div>
 
       <div class="dashboard-charts">
-        <BaseCard title="Stock คงเหลือแยกตามสินค้า">
+        <BaseCard title="Stock คงเหลือแยกตามสินค้า" style="--card-delay: 260ms">
           <BaseChart :option="stockByProductOption" height="320px" />
           <div class="chart-legend">
             <span class="chart-legend__dot chart-legend__dot--low-stock"></span>
@@ -177,7 +189,7 @@ onMounted(() => {
           </div>
         </BaseCard>
 
-        <BaseCard title="สรุปการเคลื่อนไหวสต๊อก">
+        <BaseCard title="สรุปการเคลื่อนไหวสต๊อก" style="--card-delay: 310ms">
           <BaseChart :option="movementBreakdownOption" height="320px" />
         </BaseCard>
       </div>
@@ -198,15 +210,37 @@ onMounted(() => {
 }
 
 .kpi-card {
-  @apply flex flex-col gap-1;
+  @apply flex flex-col gap-2;
+  transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
 }
 
-.kpi-card__icon {
-  color: var(--brass-dark);
+@media (hover: hover) and (pointer: fine) {
+  .kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      inset 0 1px 0 var(--edge-highlight),
+      0 16px 28px -12px var(--shadow-color),
+      0 2px 4px rgba(43, 29, 14, 0.1);
+  }
 }
 
-.kpi-card--alert .kpi-card__icon {
-  color: var(--destructive);
+.kpi-card__icon-badge {
+  @apply inline-flex flex-none items-center justify-center rounded-[10px];
+  width: 40px;
+  height: 40px;
+  margin-bottom: 4px;
+  background: radial-gradient(circle at 32% 28%, var(--brass-light), var(--brass) 55%, var(--brass-dark) 100%);
+  color: var(--leather-dark);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.25),
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.18);
+}
+
+.kpi-card--alert .kpi-card__icon-badge {
+  background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--destructive) 70%, white), var(--destructive) 100%);
+  color: white;
 }
 
 .kpi-card__label {
@@ -217,8 +251,9 @@ onMounted(() => {
 
 .kpi-card__value {
   color: var(--ink);
-  font-size: 1.375rem;
+  font-size: 1.625rem;
   font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .dashboard-charts {

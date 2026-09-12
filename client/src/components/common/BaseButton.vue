@@ -37,11 +37,11 @@ const isDisabled = computed(() => props.disabled || props.loading)
 .btn {
   @apply inline-flex items-center justify-center gap-2 rounded-[10px] border border-transparent text-sm font-bold select-none;
   padding: 10px 18px;
-  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease, background 160ms ease;
+  transition: transform 140ms var(--ease-out), box-shadow 140ms var(--ease-out), filter 120ms ease, background 160ms ease;
 }
 
-.btn:active {
-  transform: translateY(1px);
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .btn:disabled {
@@ -89,6 +89,15 @@ const isDisabled = computed(() => props.disabled || props.loading)
 .btn--ghost:hover:not(:disabled) {
   background: rgba(43, 29, 14, 0.06);
   color: var(--ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn--secondary:hover:not(:disabled) {
+    border-color: var(--brass-dark);
+    box-shadow:
+      0 3px 8px -2px rgba(43, 29, 14, 0.2),
+      inset 0 1px 0 var(--edge-highlight);
+  }
 }
 
 .btn--danger {

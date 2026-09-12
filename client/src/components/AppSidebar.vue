@@ -282,9 +282,15 @@ onMounted(() => {
   transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease, gap 160ms ease;
 }
 
-.sidebar-link:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--brass-light);
+@media (hover: hover) and (pointer: fine) {
+  .sidebar-link:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--brass-light);
+  }
+
+  .sidebar-link:hover .sidebar-link__icon {
+    transform: translateX(2px);
+  }
 }
 
 .sidebar-link.is-active {
@@ -306,6 +312,7 @@ onMounted(() => {
 
 .sidebar-link__icon {
   @apply inline-flex flex-none items-center justify-center;
+  transition: transform 160ms var(--ease-out);
 }
 
 .sidebar-link__label {
