@@ -1,5 +1,7 @@
 import { pool } from '@/config/database.js'
 import { InventoryMovement } from '@/models/inventoryMovement.model.js'
+import { LOW_STOCK_THRESHOLD } from '@/repositories/dashboard.repository.js'
+import { notificationRepository } from '@/repositories/notification.repository.js'
 import type { iInventoryMovement, tInventoryMovementType } from '@/types/inventory.types.js'
 
 const toApiMovement = (movement: InventoryMovement): iInventoryMovement => ({
@@ -47,6 +49,14 @@ const applyMovement = async (
     ])
 
     const movement = await InventoryMovement.create({ productId, type, quantity, note: note ?? null }, client)
+
+    // แจ้งเตือนทุกครั้งที่ตัดสต๊อก (ไม่ใช่แค่ตอนข้ามเกณฑ์ครั้งแรก) แล้วเหลือ <= เกณฑ์ ให้ตรงกับที่ตัดสต๊อกจริงในธุรกรรมนี้
+    if (delta < 0 && newQuantity <= LOW_STOCK_THRESHOLD) {
+      await notificationRepository.recordLowStockEvent(
+        { productId, sku: product.sku, name: product.name, stockQuantity: newQuantity },
+        client
+      )
+    }
 
     await client.query('COMMIT')
 

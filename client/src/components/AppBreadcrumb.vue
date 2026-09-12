@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { ChevronDown, ChevronRight, House } from '@lucide/vue'
 import { useRoleStore } from '@/stores/role'
 import type { tRole } from '@/types/role.types'
+import AppNotificationBell from '@/components/AppNotificationBell.vue'
 
 // #store
 const roleStore = useRoleStore()
@@ -54,16 +55,20 @@ const roleOptions: tRole[] = ['Admin', 'Sales', 'Warehouse', 'Viewer']
       </template>
     </nav>
 
-    <div class="role-select-wrap">
-      <select
-        class="role-select"
-        :value="roleStore.currentRole"
-        aria-label="สลับ demo role"
-        @change="ev.onRoleChange"
-      >
-        <option v-for="role in roleOptions" :key="role" :value="role">{{ role }}</option>
-      </select>
-      <ChevronDown class="role-select__icon" :size="12" :stroke-width="2.4" aria-hidden="true" />
+    <div class="header-actions">
+      <AppNotificationBell />
+
+      <div class="role-select-wrap">
+        <select
+          class="role-select"
+          :value="roleStore.currentRole"
+          aria-label="สลับ demo role"
+          @change="ev.onRoleChange"
+        >
+          <option v-for="role in roleOptions" :key="role" :value="role">{{ role }}</option>
+        </select>
+        <ChevronDown class="role-select__icon" :size="12" :stroke-width="2.4" aria-hidden="true" />
+      </div>
     </div>
   </div>
 </template>
@@ -105,6 +110,13 @@ const roleOptions: tRole[] = ['Admin', 'Sales', 'Warehouse', 'Viewer']
 .breadcrumb__item.is-current {
   color: var(--ink);
   font-weight: 700;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
 }
 
 .role-select-wrap {

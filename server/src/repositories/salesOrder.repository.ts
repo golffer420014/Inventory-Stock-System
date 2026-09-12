@@ -1,5 +1,7 @@
 import type { PoolClient } from 'pg'
 import { pool } from '@/config/database.js'
+import { LOW_STOCK_THRESHOLD } from '@/repositories/dashboard.repository.js'
+import { notificationRepository } from '@/repositories/notification.repository.js'
 import type { iSalesOrder, iSalesOrderItemInput, tSalesOrderStatus } from '@/types/salesOrder.types.js'
 
 interface SalesOrderRow {
@@ -251,6 +253,14 @@ export const salesOrderRepository = {
            VALUES ($1, 'OUT', $2, $3)`,
           [item.product_id, item.quantity, `Sales Order ${orderNumber}`]
         )
+
+        // Fulfill ตัดสต๊อกเสมอ (เป็นการ cut ทุกครั้ง) แจ้งเตือนทุกครั้งที่เหลือ <= เกณฑ์ ให้ตรงกับที่ตัดสต๊อกจริงในธุรกรรมนี้
+        if (newQuantity <= LOW_STOCK_THRESHOLD) {
+          await notificationRepository.recordLowStockEvent(
+            { productId: item.product_id, sku: product.sku, name: product.name, stockQuantity: newQuantity },
+            client
+          )
+        }
       }
 
       await client.query(`UPDATE sales_orders SET status = 'FULFILLED', updated_at = now() WHERE id = $1`, [id])
