@@ -18,8 +18,8 @@ Backend API ของระบบ Inventory & Stock System (Mini ERP) พัฒ�
 
 - **Node.js** + **Express** + **TypeScript** (รันตรงด้วย `tsx` ระหว่าง dev, ไม่ต้อง build ทุกครั้งที่แก้โค้ด)
 - **PostgreSQL** ผ่าน [`pg`](https://node-postgres.com/) (`Pool`) - เชื่อมต่อ Supabase Postgres โดยตรง **ไม่ใช้ ORM**
-- **Puppeteer** + **Handlebars** - generate PDF จาก HTML template (Invoice, Sales/Inventory Report)
-- **Multer** - รับไฟล์อัปโหลด (รูปสินค้า, สลิปหลักฐานการชำระเงิน) เก็บลงดิสก์ของ server เอง
+- **Puppeteer** (`puppeteer-core` + `@sparticuz/chromium` บน production, `puppeteer` เต็มตอน dev) + **Handlebars** - generate PDF จาก HTML template (Invoice, Sales/Inventory Report)
+- **Multer** (memory storage) - รับไฟล์อัปโหลด (รูปสินค้า, สลิปหลักฐานการชำระเงิน) แล้วส่งต่อเข้า **Supabase Storage**
 
 ## รูปแบบโครงสร้าง (Structure Pattern)
 
@@ -63,12 +63,13 @@ server/
     ├── middlewares/
     │   ├── auth.middleware.ts        # Demo auth - อ่าน role จาก header `x-demo-role` (ยังไม่มีระบบ login จริง)
     │   ├── role.middleware.ts        # requireRole(...roles) ตรวจสิทธิ์ตาม Permission Matrix ก่อนเข้าถึง route
-    │   ├── upload.middleware.ts      # Multer - เก็บไฟล์อัปโหลด (รูปสินค้า/สลิป) ลง public/uploads
+    │   ├── upload.middleware.ts      # Multer memory storage - รับไฟล์เข้าหน่วยความจำก่อนส่งต่อ Supabase Storage
     │   └── errorHandler.middleware.ts # ดักจับ error กลางของแอปแล้วตอบกลับเป็น response ที่เหมาะสม
     │
     ├── config/
     │   ├── env.ts             # รวมค่า env ทั้งหมด
-    │   └── database.ts        # ตั้งค่าการเชื่อมต่อฐานข้อมูล
+    │   ├── database.ts        # ตั้งค่าการเชื่อมต่อฐานข้อมูล
+    │   └── supabase.ts        # Supabase client (service role key) - ใช้อัปโหลดไฟล์เข้า Storage bucket "uploads"
     │
     ├── templates/           # Handlebars template ใช้ร่วมกับ Puppeteer - จัดเป็นเอกสารทางการ (header บริษัท/content/footer)
     │   ├── invoice.hbs             # มีช่องทางการชำระเงิน + ยอดเงินเป็นตัวอักษรภาษาไทยที่ footer
@@ -77,9 +78,11 @@ server/
     │
     ├── types/               # Type/Interface กลางที่ใช้ร่วมกันหลายไฟล์ในแต่ละโดเมน
     ├── utils/               # Utility function ที่ใช้ร่วมกันหลาย layer/domain (csv, date, pdf, thaiBahtText)
-    │   └── notificationBus.ts # EventEmitter ในหน่วยความจำ — pub/sub ระหว่าง repository ที่ตัดสต๊อกกับ SSE connection ของแต่ละ client
     ├── app.ts                # ประกอบ Express app (middleware, route, error handler) - ไม่ start server
-    └── server.ts              # Entry point - สั่ง app.listen()
+    └── server.ts              # Entry point (local dev) - สั่ง app.listen()
+
+api/
+└── index.ts                  # Entry point บน Vercel Serverless Function - export Express app ตรงๆ ไม่เรียก listen()
 ```
 
 ## Scripts
@@ -100,7 +103,8 @@ Copy `.env.example` เป็น `.env` แล้วปรับค่าตา�
 | `PORT` | Port ที่ server รัน (default `4000`) |
 | `CLIENT_ORIGIN` | Origin ของ frontend สำหรับตั้งค่า CORS |
 | `DATABASE_URL` | Connection string ของ Supabase Postgres (ใช้ pooler connection ไม่ใช่ direct - direct เป็น IPv6-only) |
-| `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_SECRET_KEY` / `SUPABASE_JWKS_URL` | เผื่อใช้ตอนต่อ authentication จริงในอนาคต (ปัจจุบันยังไม่ได้ใช้ - auth เป็น Demo Role) |
+| `SUPABASE_URL` / `SUPABASE_SECRET_KEY` | ต่อ Supabase Storage bucket `uploads` (service role key ใช้ bypass RLS ตอนอัปโหลดไฟล์) - ต้องสร้าง bucket นี้ไว้ล่วงหน้าเป็น public |
+| `SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_JWKS_URL` | เผื่อใช้ตอนต่อ authentication จริงในอนาคต (ปัจจุบันยังไม่ได้ใช้ - auth เป็น Demo Role) |
 
 ## API
 
@@ -124,8 +128,8 @@ Request ต้องส่ง header **`x-demo-role`** เพื่อจำล�
 | `/invoices`, `/invoices/:id/pdf` | GET | Admin, Sales, Warehouse, Viewer |
 | `/dashboard/summary` | GET | Admin, Sales, Warehouse, Viewer |
 | `/reports/sales`, `/inventory` (+ `/csv`, `/pdf`) | GET | Admin, Sales, Warehouse, Viewer |
-| `/notifications/stream` | GET | ทุก role (SSE, ไม่ผ่าน `requireRole` — EventSource ส่ง custom header ไม่ได้) |
+| `/notifications/low-stock` | GET | ทุก role (ไม่ผ่าน `requireRole` เหมือนสิทธิ์ Dashboard) - client poll endpoint นี้ทุก 15 วินาที |
 
-ไฟล์ที่อัปโหลดผ่าน `POST /api/uploads` (รูปสินค้า, สลิปหลักฐานการชำระเงิน) ถูกเก็บไว้ในดิสก์ของ server เอง (`server/public/uploads` ผ่าน Multer) แล้ว serve กลับผ่าน `express.static` ที่ path `/uploads/<filename>` - ไม่ได้ใช้ Supabase Storage
+ไฟล์ที่อัปโหลดผ่าน `POST /api/uploads` (รูปสินค้า, สลิปหลักฐานการชำระเงิน) รับเข้าหน่วยความจำผ่าน Multer แล้วอัปโหลดต่อเข้า **Supabase Storage** bucket `uploads` ทันที ไม่เก็บลงดิสก์ของ server เอง - จำเป็นเพราะ deploy บน Vercel serverless function ที่ filesystem ไม่ persistent ข้าม request
 
-`GET /notifications/stream` เปิด Server-Sent Events connection ค้างไว้ (`EventEmitter` ในหน่วยความจำฝั่ง server เป็น pub/sub ระหว่าง request ที่ตัดสต๊อกกับแต่ละ client ที่เปิด connection ค้าง) ใช้ push แจ้งเตือนสินค้าใกล้หมดแบบ real-time ไปที่ client ทันทีที่มีการตัดสต๊อก ไม่ต้อง poll — เหมาะกับการรันบนเซิร์ฟเวอร์แบบ long-running instance เดียว (ไม่ใช่ serverless ที่ request แต่ละครั้งอาจไปคนละ instance)
+`GET /notifications/low-stock` คืนรายการสินค้าที่สต๊อกต่ำกว่าเกณฑ์ ณ ปัจจุบันแบบ REST ธรรมดา ให้ client poll เป็นระยะแทน SSE - เดิมใช้ SSE + `EventEmitter` ในหน่วยความจำเป็น pub/sub แต่ใช้ไม่ได้บน serverless เพราะแต่ละ request อาจไปคนละ instance กัน (ดู [Engineering Decisions ใน README หลัก](../README.md#-engineering-decisions))

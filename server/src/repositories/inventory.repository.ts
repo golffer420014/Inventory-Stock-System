@@ -1,8 +1,6 @@
 import { pool } from '@/config/database.js'
-import { LOW_STOCK_THRESHOLD } from '@/repositories/dashboard.repository.js'
 import { InventoryMovement } from '@/models/inventoryMovement.model.js'
 import type { iInventoryMovement, tInventoryMovementType } from '@/types/inventory.types.js'
-import { emitLowStock } from '@/utils/notificationBus.js'
 
 const toApiMovement = (movement: InventoryMovement): iInventoryMovement => ({
   id: movement.id,
@@ -51,11 +49,6 @@ const applyMovement = async (
     const movement = await InventoryMovement.create({ productId, type, quantity, note: note ?? null }, client)
 
     await client.query('COMMIT')
-
-    // แจ้งเตือนแบบ real-time ทุกครั้งที่ "ตัด" สต๊อก (delta ติดลบ) แล้วผลลัพธ์ยังต่ำกว่าเกณฑ์ ไม่ใช่แค่ตอนตัดข้ามเกณฑ์ครั้งแรก
-    if (delta < 0 && newQuantity <= LOW_STOCK_THRESHOLD) {
-      emitLowStock({ productId, sku: product.sku, name: product.name, stockQuantity: newQuantity })
-    }
 
     return toApiMovement(movement)
   } catch (err) {

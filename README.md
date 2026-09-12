@@ -32,6 +32,7 @@
 - [ภาพหน้าจอ](#-ภาพหน้าจอ)
 - [ขอบเขตระบบ](#-ขอบเขตระบบ-system-scope)
 - [Business Workflow](#-business-workflow)
+- [Engineering Decisions](#-engineering-decisions)
 - [Demo Role & Permission Matrix](#-demo-role--permission-matrix)
 - [Tech Stack](#-tech-stack)
 - [System Architecture](#-system-architecture)
@@ -43,7 +44,7 @@
 
 ## 🔎 Overview
 
-ไอเดียเริ่มต้นของโปรเจกต์นี้ง่าย ๆ คือ อยากลองสร้างระบบที่จำลองการทำงานจริงของธุรกิจขายสินค้าทั้งสาย ตั้งแต่ฝ่ายขายรับออเดอร์ ออกใบแจ้งหนี้ ลูกค้าจ่ายเงิน คลังส่งของ ไปจนถึงสรุปยอดขายให้เจ้าของธุรกิจดู ไม่ใช่แค่หน้าจอ CRUD แยกส่วนที่ไม่เชื่อมกัน
+ไอเดียเริ่มต้นของโปรเจกต์นี้คือ อยากสร้างระบบที่จำลอง pipeline การขายทั้งสายของธุรกิจจริง โดยออกแบบให้แต่ละขั้นตอนเชื่อมต่อกันเป็นกระบวนการเดียวแบบ end-to-end: ฝ่ายขายสร้าง Sales Order → ระบบ generate Invoice ให้อัตโนมัติ → แนบหลักฐานการชำระเงิน → คลังตรวจสอบแล้วตัดสต๊อก (Fulfill) → เกิด Inventory Movement พร้อมแจ้งเตือนทันทีที่สต๊อกใกล้หมด → ข้อมูลไหลต่อไปอัปเดต Dashboard และ Report ให้เจ้าของธุรกิจเห็นผลทันที ทุกจุดเปลี่ยนสถานะถูกควบคุมด้วย state machine (DRAFT → CONFIRMED → FULFILLED / CANCELLED) และ role permission ที่บังคับทั้งฝั่ง Server และ Client
 
 ระบบนี้ทำอะไรได้บ้าง:
 
@@ -52,7 +53,7 @@
 - **เจ้าของธุรกิจ/ผู้จัดการ** เห็นภาพรวมยอดขาย สต๊อกคงเหลือ และได้รับแจ้งเตือนทันทีที่สินค้าใกล้หมด โดยไม่ต้องเดินไปถามพนักงานหรือเปิดชีทเช็คเอง
 - แต่ละคนในทีมเห็นและทำได้เฉพาะสิ่งที่ตำแหน่งตัวเองควรทำ (ฝ่ายขาย/คลัง/ผู้บริหาร/ผู้ดูรายงาน) ไม่ต้องกังวลว่าใครจะกดปุ่มที่ไม่ควรกด
 - ต้องใช้เอกสาร (ใบแจ้งหนี้ รายงานยอดขาย/สต๊อก) ก็กดปุ่มเดียวได้ไฟล์ PDF พร้อมพิมพ์ทันที ไม่ต้องเอาไปจัดหน้าใน Excel เอง
-- สินค้าใกล้หมดสต๊อก ระบบแจ้งเตือนขึ้นทันทีแบบ real-time ทุกครั้งที่มีการตัดสต๊อก ไม่ต้องรอ refresh หน้าจอ
+- สินค้าใกล้หมดสต๊อก ระบบแจ้งเตือนขึ้นให้เองอัตโนมัติทุกครั้งที่มีการตัดสต๊อก ไม่ต้องรอ refresh หน้าจอ
 
 รายละเอียดทั้งหมดอยู่ด้านล่างนี้ครับ
 
@@ -105,7 +106,7 @@
 
 - รับสินค้าเข้า (Stock In) / เบิกสินค้าออก (Stock Out) / ปรับปรุงจำนวนสินค้า (Stock Adjustment) ผ่าน dialog เดียว
 - ดูประวัติการเคลื่อนไหวของสินค้า (Inventory Movement) พร้อมค้นหาจากชื่อ/SKU/หมายเหตุ
-- แจ้งเตือนสินค้าใกล้หมดแบบ real-time (Server-Sent Events + toast)
+- แจ้งเตือนสินค้าใกล้หมดอัตโนมัติ (client polling ทุก 15 วินาที + toast)
 </details>
 
 <details>
@@ -126,7 +127,7 @@
 - KPI Card: ยอดขาย, จำนวนสินค้า, Stock คงเหลือ, สินค้าใกล้หมด
 - กราฟ Stock คงเหลือแยกตามสินค้า และกราฟสรุปการเคลื่อนไหวสต๊อก (ECharts)
 - Sales Report / Inventory Report พร้อม filter ช่วงวันที่, Export เป็น CSV, Generate/Preview เป็น PDF
-- แจ้งเตือนสินค้าใกล้หมดแบบ real-time (Server-Sent Events) ทันทีที่สต๊อกตัดข้ามเกณฑ์ต่ำ
+- แจ้งเตือนสินค้าใกล้หมดอัตโนมัติ (client polling) ทันทีที่สต๊อกตัดข้ามเกณฑ์ต่ำ
 </details>
 
 นอกจากนี้ยังมี **Usability pass ทั่วระบบ**: toast แจ้งผลลัพธ์ทุก action, confirm dialog แทน `window.confirm`, validation รายช่องในฟอร์ม, dialog รองรับ keyboard เต็มรูปแบบ (focus trap), หน้าแรกแนะนำ workflow แบบ step-by-step สำหรับผู้ใช้ใหม่
@@ -147,10 +148,31 @@ stateDiagram-v2
 
     note right of FULFILLED
         ตัดสต๊อกข้ามเกณฑ์ต่ำ?
-        → แจ้งเตือน real-time (SSE)
+        → แจ้งเตือนสต๊อกใกล้หมด (client polling)
         → อัปเดต Dashboard/Report
     end note
 ```
+
+---
+
+## 🧠 Engineering Decisions
+
+จุดที่ผมให้น้ำหนักมากที่สุดในโปรเจกต์นี้ไม่ใช่แค่ทำให้ฟีเจอร์ทำงานได้ แต่คือทำให้ business rule ถูกบังคับจริงในระดับ database ต่อให้มี request เข้ามาพร้อมกันหรือมีคนพยายามยิง API ข้ามหน้า UI ก็ยังพังไม่ได้
+
+**1. กัน race condition ตอนเปลี่ยนสถานะ/ตัดสต๊อกด้วย row lock ในทรานแซกชันเดียว**
+ทุกการเปลี่ยนสถานะ Sales Order (Confirm / Fulfill / Cancel) จะ `SELECT ... FOR UPDATE` ล็อกแถวก่อนเช็คสถานะปัจจุบัน แล้วค่อยอัปเดต - ถ้ามี 2 request ยิง Fulfill order เดียวกันพร้อมกัน คำขอที่สองจะรอ lock แล้วเจอสถานะที่เปลี่ยนไปแล้ว จึงถูก reject แทนที่จะตัดสต๊อกซ้ำ เช่นเดียวกับตอนตัดสต๊อกแต่ละสินค้า ก็ล็อกแถว `products` ก่อนเช็คว่าสต๊อกพอไหม ถ้าสินค้าใดไม่พอ rollback ทั้ง order ทันที ไม่ปล่อยให้ตัดสต๊อกค้างไว้ครึ่งเดียว
+
+**2. Payment gate บังคับใน transaction ไม่ใช่แค่ซ่อนปุ่มฝั่ง UI**
+`fulfill()` เช็คจำนวนไฟล์หลักฐานการชำระเงินก่อนอนุญาตให้ตัดสต๊อก อยู่ในทรานแซกชันเดียวกับการล็อกสถานะ order ต่อให้ยิง API ตรงข้าม UI ก็ผ่าน gate นี้ไปไม่ได้ - ฝั่ง client แค่ซ่อนปุ่มเพื่อ UX ที่ดีขึ้น แต่ตัวจริงที่บังคับกฎคือชั้น database
+
+**3. ราคาสินค้า snapshot ตอนสร้างออเดอร์ ไม่เชื่อค่าจาก client**
+ตอนสร้าง Sales Order ระบบ query ราคาปัจจุบันจากตาราง `products` มา snapshot ใส่ `sales_order_items.unit_price` เอง ไม่รับราคาที่ client ส่งมาโดยตรง กันการปลอมราคาสั่งซื้อผ่าน request และทำให้ยอดใน Invoice คงที่แม้ราคาสินค้าจะเปลี่ยนไปทีหลัง
+
+**4. เลือก client polling แทน SSE ตอน deploy บน serverless**
+เดิมแจ้งเตือนสต๊อกใกล้หมดด้วย SSE + in-memory `EventEmitter` เป็น pub/sub ระหว่าง request ที่ตัดสต๊อกกับ connection ที่เปิดค้างไว้ ใช้ได้ดีตอนรันเป็น process เดียวยาวๆ แต่พอจะ deploy ขึ้น Vercel serverless จริงก็ใช้ไม่ได้ เพราะ (1) function มี timeout ตัด connection ที่เปิดค้างไว้ (2) แต่ละ request อาจถูกส่งไปคนละ instance กัน - instance ที่ตัดสต๊อกกับ instance ที่ถือ SSE connection อยู่คนละหน่วยความจำ event เลยไปไม่ถึง จึงเปลี่ยนมาเป็น client polling ทุก 15 วินาทีแทนก่อน deploy จริง ยอมแลก latency บางส่วนเพื่อให้ทำงานถูกต้องแน่นอนไม่ว่าจะมีกี่ instance
+
+**5. Query ด้วย `LEFT JOIN LATERAL` แยก aggregate แต่ละความสัมพันธ์**
+ตอนดึง Sales Order พร้อม items และ payments ซึ่งเป็น one-to-many กับ order ทั้งคู่ ถ้า join ตรง ๆ พร้อมกันสองตารางจะเกิด cartesian product (เช่น 2 items x 3 payments = 6 แถว) ทำให้ json_agg นับซ้ำผิด เลยแยก aggregate แต่ละความสัมพันธ์เป็น subquery คนละอันด้วย `LEFT JOIN LATERAL` ก่อนค่อยรวมกลับเป็นแถวเดียว
 
 ---
 
@@ -169,7 +191,7 @@ stateDiagram-v2
 | ดู Invoice / พิมพ์ PDF | ✅ | ✅ | 👁️ | 👁️ |
 | Stock In / Stock Out / Adjustment | ✅ | ❌ | ✅ | ❌ |
 | Inventory Movement | ✅ | 👁️ | ✅ | 👁️ |
-| แจ้งเตือนสินค้าใกล้หมด (Real-time) | ✅ | ✅ | ✅ | ✅ |
+| แจ้งเตือนสินค้าใกล้หมด (Auto Polling) | ✅ | ✅ | ✅ | ✅ |
 | Report | ✅ | ✅ | ✅ | ✅ |
 
 `✅ ใช้งานได้` · `👁️ ดูอย่างเดียว` · `❌ ไม่มีสิทธิ์` - บังคับสิทธิ์ทั้งฝั่ง Server (middleware `requireRole`) และฝั่ง Client (UI)
@@ -183,10 +205,10 @@ stateDiagram-v2
 | **Frontend** | Vue 3 (Composition API), TypeScript, Pinia (Option Store), Vue Router, Tailwind CSS v4, ECharts, Vite |
 | **Backend** | Node.js, Express, TypeScript (`tsx`) |
 | **Database** | PostgreSQL ผ่าน [Supabase](https://supabase.com) (คุยผ่าน `pg` โดยตรง ไม่ใช้ ORM) |
-| **Document/PDF** | Puppeteer + Handlebars (Invoice, Sales/Inventory Report) |
-| **Real-time** | Server-Sent Events (แจ้งเตือนสินค้าใกล้หมด) |
-| **File Upload** | Multer (รูปสินค้า, สลิปหลักฐานการชำระเงิน) |
-| **Deployment** | Vercel (Frontend), Supabase (Database) |
+| **Document/PDF** | Puppeteer (`@sparticuz/chromium` บน production) + Handlebars (Invoice, Sales/Inventory Report) |
+| **Notification** | Client Polling ทุก 15 วินาที (แจ้งเตือนสินค้าใกล้หมด) |
+| **File Upload** | Multer (memory) → Supabase Storage (รูปสินค้า, สลิปหลักฐานการชำระเงิน) |
+| **Deployment** | Vercel (Frontend + Backend Serverless Function), Supabase (Database + Storage) |
 
 ---
 
@@ -195,10 +217,10 @@ stateDiagram-v2
 ```mermaid
 graph LR
     U["👤 User / Browser"] -->|HTTPS| FE["Frontend<br/>Vue 3 + TypeScript<br/>(Vercel)"]
-    FE -->|"REST API + SSE<br/>x-demo-role header"| BE["Backend API<br/>Node.js + Express<br/>Route → Controller → Service → Repository"]
+    FE -->|"REST API<br/>x-demo-role header"| BE["Backend API<br/>Node.js + Express<br/>Route → Controller → Service → Repository<br/>(Vercel Serverless Function)"]
     BE --> DB[("PostgreSQL<br/>(Supabase)")]
     BE --> PDF["Puppeteer + Handlebars<br/>PDF Engine"]
-    BE -->|Multer| FS["Local Disk<br/>server/public/uploads"]
+    BE -->|Multer| STORAGE["Supabase Storage<br/>(รูปสินค้า, หลักฐานการชำระเงิน)"]
 ```
 
 รายละเอียดสถาปัตยกรรมและโครงสร้างโค้ดแต่ละฝั่ง: [client/README.md](client/README.md) · [server/README.md](server/README.md)
@@ -275,7 +297,7 @@ MVP ครบ 4 module หลักตาม System Scope แล้ว ทดส
 - Sales Order & Invoice workflow แบบเต็ม (Create → Confirm → แนบไฟล์การชำระเงิน → Fulfill → ตัดสต๊อก)
 - Invoice PDF generation รายใบ, Sales/Inventory Report พร้อม Export CSV และ PDF
 - Dashboard พร้อมกราฟ (ECharts) และ KPI Card
-- แจ้งเตือนสินค้าใกล้หมดแบบ Real-time (Server-Sent Events)
+- แจ้งเตือนสินค้าใกล้หมดอัตโนมัติ (Client Polling)
 - หน้าแรก (Home) แนะนำ workflow แบบ step-by-step สำหรับผู้ใช้ใหม่
 - Usability pass ทั่วระบบ: toast, confirm dialog, validation รายช่อง, focus trap, ค้นหาในลิสต์ยาว
 - Design polish ทั่วระบบ: micro-interaction (hover/press feedback), entrance animation แบบ stagger, cross-fade ระหว่าง loading/error/empty state
