@@ -488,7 +488,12 @@ onMounted(() => {
       </template>
 
       <ul class="product-list">
-        <li v-for="product in filteredProductList" :key="product.id" class="product-card">
+        <li
+          v-for="(product, index) in filteredProductList"
+          :key="product.id"
+          class="product-card animate-fade-up"
+          :style="{ '--fade-up-delay': `${Math.min(index * 40, 320)}ms` }"
+        >
           <img v-if="product.imageUrl" :src="product.imageUrl" class="product-card__thumb" alt="" />
           <div v-else class="product-card__thumb product-card__thumb--empty" aria-hidden="true">
             <ImagePlus :size="28" :stroke-width="1.6" />
@@ -733,6 +738,19 @@ onMounted(() => {
   border: 1px solid var(--paper-border);
   border-radius: 12px;
   background: var(--paper);
+  transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .product-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--brass);
+    box-shadow: 0 14px 26px -16px var(--shadow-color);
+  }
+}
+
+.product-card:active {
+  transform: scale(0.99);
 }
 
 .product-card__thumb {
@@ -789,6 +807,14 @@ onMounted(() => {
   }
 
   .image-upload__button:active {
+    transform: none;
+  }
+
+  .product-card {
+    transition: none;
+  }
+
+  .product-card:active {
     transform: none;
   }
 }

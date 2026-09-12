@@ -387,8 +387,23 @@ onMounted(() => {
 }
 
 .sidebar-toggle:active {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.97);
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar,
+  .brand__text,
+  .sidebar-link,
+  .sidebar-link__icon,
+  .sidebar-group__chevron,
+  .sidebar-toggle {
+    transition: none;
+  }
+
+  .sidebar-toggle:active {
+    transform: none;
+  }
 }
 
 @media (max-width: 760px) {

@@ -278,6 +278,7 @@ MVP ครบ 4 module หลักตาม System Scope แล้ว ทดส
 - แจ้งเตือนสินค้าใกล้หมดแบบ Real-time (Server-Sent Events)
 - หน้าแรก (Home) แนะนำ workflow แบบ step-by-step สำหรับผู้ใช้ใหม่
 - Usability pass ทั่วระบบ: toast, confirm dialog, validation รายช่อง, focus trap, ค้นหาในลิสต์ยาว
+- Design polish ทั่วระบบ: micro-interaction (hover/press feedback), entrance animation แบบ stagger, cross-fade ระหว่าง loading/error/empty state
 - จัดรูปแบบ PDF ใหม่เป็นเอกสารทางการ (header บริษัท, ยอดเงินเป็นตัวอักษรภาษาไทยอัตโนมัติ)
 - ทดสอบสิทธิ์การใช้งานตาม Role ครบทุก Role ทั้งฝั่ง Server (API) และ Client (UI)
 </details>

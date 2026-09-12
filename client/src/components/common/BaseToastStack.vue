@@ -129,9 +129,12 @@ const iconByKind = {
 }
 
 .toast-move,
-.toast-enter-active,
 .toast-leave-active {
   transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.toast-enter-active {
+  transition: transform 200ms var(--ease-out), opacity 200ms var(--ease-out);
 }
 
 .toast-enter-from {

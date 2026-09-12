@@ -26,23 +26,25 @@ defineEmits<{
 </script>
 
 <template>
-  <div v-if="isLoading" class="async-state" aria-live="polite">
-    <BaseSpinner :size="20" />
-    <p>กำลังโหลดข้อมูล...</p>
-  </div>
+  <Transition name="async-fade" mode="out-in">
+    <div v-if="isLoading" key="loading" class="async-state" aria-live="polite">
+      <BaseSpinner :size="20" />
+      <p>กำลังโหลดข้อมูล...</p>
+    </div>
 
-  <div v-else-if="error" class="async-state" aria-live="assertive">
-    <BaseAlert variant="destructive">{{ error }}</BaseAlert>
-    <BaseButton variant="secondary" @click="$emit('retry')">ลองใหม่อีกครั้ง</BaseButton>
-  </div>
+    <div v-else-if="error" key="error" class="async-state" aria-live="assertive">
+      <BaseAlert variant="destructive">{{ error }}</BaseAlert>
+      <BaseButton variant="secondary" @click="$emit('retry')">ลองใหม่อีกครั้ง</BaseButton>
+    </div>
 
-  <div v-else-if="isEmpty" class="async-state">
-    <slot name="empty">
-      <p class="async-state__empty">{{ emptyText }}</p>
-    </slot>
-  </div>
+    <div v-else-if="isEmpty" key="empty" class="async-state">
+      <slot name="empty">
+        <p class="async-state__empty">{{ emptyText }}</p>
+      </slot>
+    </div>
+  </Transition>
 
-  <slot v-else />
+  <slot v-if="!isLoading && !error && !isEmpty" />
 </template>
 
 <style scoped>
@@ -59,5 +61,22 @@ defineEmits<{
 
 .async-state__empty {
   margin: 0;
+}
+
+.async-fade-enter-active,
+.async-fade-leave-active {
+  transition: opacity 160ms var(--ease-out);
+}
+
+.async-fade-enter-from,
+.async-fade-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .async-fade-enter-active,
+  .async-fade-leave-active {
+    transition: none;
+  }
 }
 </style>

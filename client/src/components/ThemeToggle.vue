@@ -55,7 +55,17 @@ const ev = event()
 }
 
 .theme-toggle:active {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.97);
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle {
+    transition: none;
+  }
+
+  .theme-toggle:active {
+    transform: none;
+  }
 }
 </style>
