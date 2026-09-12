@@ -25,6 +25,7 @@ app.use(cors({ origin: env.clientOrigin }))
 if (env.nodeEnv !== 'test') {
   app.use(morgan('dev'))
 }
+
 app.use(express.json())
 app.use(express.static(publicDir))
 app.use(authMiddleware)
