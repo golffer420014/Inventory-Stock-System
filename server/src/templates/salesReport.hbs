@@ -6,37 +6,52 @@
   <style>
     /* @page กำหนดขนาดกระดาษ + margin จริงให้ Puppeteer ใช้ตอน print (preferCSSPageSize: true ใน pdf.util.ts) */
     @page { size: A4; margin: 16mm 12mm; }
-    /* 265mm = A4 297mm - 16mm บน/ล่างของ @page margin */
-    html, body { height: 265mm; margin: 0; }
-    body { display: flex; flex-direction: column; box-sizing: border-box; padding: 24px; font-family: 'Noto Sans Thai', 'Tahoma', 'Segoe UI', sans-serif; color: #222; }
+    html, body { margin: 0; }
+    body { box-sizing: border-box; padding: 24px; font-family: 'Noto Sans Thai', 'Tahoma', 'Segoe UI', sans-serif; color: #222; }
+    .nowrap { white-space: nowrap; }
 
     /* header */
     .doc-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding-bottom: 16px; border-bottom: 2px solid #222; margin-bottom: 20px; }
     .company-name { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
     .company-detail { font-size: 11px; color: #555; line-height: 1.5; }
-    .doc-title { flex-shrink: 0; max-width: 260px; text-align: right; }
-    .doc-title h1 { font-size: 19px; margin: 0 0 4px; }
-    .doc-title .meta { font-size: 11px; color: #666; margin-top: 2px; }
+    .doc-title { flex-shrink: 0; text-align: right; }
+    .doc-title h1 { font-size: 20px; margin: 0; }
+    .doc-title .subtitle { font-size: 11px; color: #666; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+    .doc-title .meta { font-size: 11px; color: #555; margin-top: 2px; }
 
-    /* content */
-    .doc-content { flex: 1 0 auto; }
-    .summary { display: flex; margin-bottom: 20px; font-size: 13px; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; }
+    /* summary */
+    .summary { display: flex; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; }
     .summary > div { flex: 1; padding: 10px 16px; border-left: 1px solid #ddd; }
-    .summary > div:first-child { border-left: none; }
-    .summary .label { color: #666; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .summary > div:first-child { flex: 1.4; border-left: none; }
+    .summary .label { color: #555; font-size: 11px; font-weight: 700; margin-bottom: 4px; }
     .summary .value { font-size: 15px; font-weight: 700; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .summary .value-primary { font-size: 20px; }
+    .summary .hint { font-size: 10px; color: #666; margin-top: 2px; }
+
+    /* table */
+    /* fixed layout ให้ความกว้างคอลัมน์คงที่ทุกหน้า ไม่ขึ้นกับเนื้อหา (รวมถึงตอนไม่มีข้อมูล) */
+    table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
     th { padding: 8px; text-align: left; font-weight: 700; border-bottom: 2px solid #222; }
     td { padding: 8px; }
     tbody tr:nth-child(even) { background: #f7f7f7; }
+    tr { break-inside: avoid; }
     .text-right { text-align: right; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .row-cancelled td { color: #767676; }
+    .row-cancelled .num { text-decoration: line-through; }
+    .empty-state { padding: 24px 8px; text-align: center; color: #666; background: none; }
+    /* tfoot ใช้ display แบบ group ปกติ ไม่ให้ Chromium พิมพ์ซ้ำทุกหน้าเหมือน thead */
+    tfoot { display: table-row-group; }
+    tfoot td { padding-top: 10px; border-top: 2px solid #222; font-weight: 700; }
+    tfoot .total-row td { font-size: 13px; }
+    tfoot .sub-row td { padding-top: 4px; border-top: none; font-weight: 400; color: #666; }
 
     /* footer */
-    .doc-footer-wrap { margin-top: auto; padding-top: 16px; }
-    .doc-footer { padding-top: 16px; border-top: 1px dashed #bbb; font-size: 12px; }
+    .doc-footer-wrap { margin-top: 24px; break-inside: avoid; }
+    .doc-footer { padding-top: 12px; border-top: 1px dashed #bbb; font-size: 12px; }
     .doc-footer .label { font-weight: 700; color: #222; margin-bottom: 4px; }
     .amount-in-words { font-size: 12px; font-weight: 700; }
-    .footer-note { margin-top: 20px; font-size: 10px; color: #999; text-align: center; }
+    .footer-note { margin-top: 20px; font-size: 10px; color: #767676; text-align: center; }
   </style>
 </head>
 <body>
@@ -45,54 +60,88 @@
       <p class="company-name">บริษัท คลังสินค้า จำกัด (สมมติ)</p>
       <div class="company-detail">
         123 ถนนสุขุมวิท แขวงคลองตัน เขตคลองเตย กรุงเทพฯ 10110<br />
-        โทร. 02-123-4567 · แฟกซ์ 02-123-4568 · เลขประจำตัวผู้เสียภาษี 0-0000-00000-00-0<br />
+        <span class="nowrap">โทร. 02-123-4567</span> · <span class="nowrap">แฟกซ์ 02-123-4568</span> · <span class="nowrap">เลขประจำตัวผู้เสียภาษี 0-0000-00000-00-0</span><br />
         อีเมล info@klangsinkha-demo.co.th · www.klangsinkha-demo.co.th
       </div>
     </div>
     <div class="doc-title">
-      <h1>รายงานยอดขาย (Sales Report)</h1>
+      <h1>รายงานยอดขาย</h1>
+      <div class="subtitle">Sales Report</div>
+      <div class="meta">ช่วงวันที่ {{#if dateRangeText}}{{dateRangeText}}{{else}}ทั้งหมด{{/if}}</div>
       <div class="meta">สร้างเมื่อ {{formatDate generatedAt}}</div>
-      {{#if dateRangeText}}<div class="meta">ช่วงวันที่ {{dateRangeText}}</div>{{/if}}
     </div>
   </div>
 
-  <div class="doc-content">
-    <div class="summary">
-      <div><div class="label">ยอดขายรวม</div><div class="value">{{formatCurrency totalAmount}} บาท</div></div>
-      <div><div class="label">จำนวน Invoice</div><div class="value">{{invoiceCount}}</div></div>
+  <div class="summary">
+    <div>
+      <div class="label">ยอดขายสุทธิ</div>
+      <div class="value value-primary">{{formatCurrency totalAmount}} บาท</div>
+      <div class="hint">ไม่รวมรายการที่ยกเลิก</div>
     </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Invoice Number</th>
-          <th>Order Number</th>
-          <th>Status</th>
-          <th class="text-right">Total Amount</th>
-          <th>Created At</th>
-        </tr>
-      </thead>
-      <tbody>
-        {{#each rows}}
-        <tr>
-          <td>{{this.invoiceNumber}}</td>
-          <td>{{this.orderNumber}}</td>
-          <td>{{this.orderStatus}}</td>
-          <td class="text-right">{{formatCurrency this.totalAmount}}</td>
-          <td>{{formatDate this.createdAt}}</td>
-        </tr>
-        {{/each}}
-      </tbody>
-    </table>
+    <div>
+      <div class="label">จำนวนใบแจ้งหนี้</div>
+      <div class="value">{{invoiceCount}} ใบ</div>
+      {{#if cancelledCount}}<div class="hint">ยกเลิก {{cancelledCount}} ใบ</div>{{/if}}
+    </div>
+    <div>
+      <div class="label">ยอดที่ยกเลิก</div>
+      <div class="value">{{formatCurrency cancelledAmount}} บาท</div>
+    </div>
   </div>
+
+  <table>
+    <colgroup>
+      <col style="width: 20%" />
+      <col style="width: 18%" />
+      <col style="width: 24%" />
+      <col style="width: 16%" />
+      <col style="width: 22%" />
+    </colgroup>
+    <thead>
+      <tr>
+        <th>เลขที่ใบแจ้งหนี้</th>
+        <th>เลขที่คำสั่งขาย</th>
+        <th>วันที่</th>
+        <th>สถานะ</th>
+        <th class="text-right">ยอดเงิน (บาท)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each rows}}
+      <tr {{#if (eq this.orderStatus 'CANCELLED')}}class="row-cancelled"{{/if}}>
+        <td>{{this.invoiceNumber}}</td>
+        <td>{{this.orderNumber}}</td>
+        <td class="nowrap">{{formatDate this.createdAt}}</td>
+        <td>{{formatOrderStatus this.orderStatus}}</td>
+        <td class="num">{{formatCurrency this.totalAmount}}</td>
+      </tr>
+      {{else}}
+      <tr><td colspan="5" class="empty-state">ไม่มีรายการขายในช่วงวันที่นี้</td></tr>
+      {{/each}}
+    </tbody>
+    {{#if rows.length}}
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="4">ยอดขายสุทธิ</td>
+        <td class="num">{{formatCurrency totalAmount}}</td>
+      </tr>
+      {{#if cancelledCount}}
+      <tr class="sub-row">
+        <td colspan="4">ไม่รวมรายการที่ยกเลิก {{cancelledCount}} ใบ</td>
+        <td class="num">{{formatCurrency cancelledAmount}}</td>
+      </tr>
+      {{/if}}
+    </tfoot>
+    {{/if}}
+  </table>
 
   <div class="doc-footer-wrap">
     <div class="doc-footer">
-      <div class="label">ยอดขายรวมเป็นตัวอักษร</div>
+      <div class="label">ยอดขายสุทธิเป็นตัวอักษร</div>
       <div class="amount-in-words">({{formatBahtText totalAmount}})</div>
     </div>
 
-    <div class="footer-note">เอกสารนี้ออกโดยระบบอัตโนมัติ · พิมพ์เมื่อ {{formatDate generatedAt}}</div>
+    <div class="footer-note">เอกสารนี้ออกโดยระบบอัตโนมัติ</div>
   </div>
 </body>
 </html>

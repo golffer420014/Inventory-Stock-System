@@ -3,7 +3,7 @@ import { reportService } from '@/services/report.service.js'
 import type { iInventoryReport, iReportDateRange, iSalesReport } from '@/types/report.types.js'
 import { toCsv } from '@/utils/csv.util.js'
 import { toIsoString } from '@/utils/date.util.js'
-import { loadTemplate, renderPdf } from '@/utils/pdf.util.js'
+import { formatDateOnly, loadTemplate, renderPdf } from '@/utils/pdf.util.js'
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -64,7 +64,9 @@ const sendPdf = (res: Response, filenamePrefix: string, pdf: Buffer): void => {
 
 const formatDateRangeText = (range: iReportDateRange): string | null => {
   if (!range.startDate && !range.endDate) return null
-  return `${range.startDate ?? '...'} ถึง ${range.endDate ?? '...'}`
+  const start = range.startDate ? formatDateOnly(range.startDate) : '...'
+  const end = range.endDate ? formatDateOnly(range.endDate) : '...'
+  return `${start} ถึง ${end}`
 }
 
 const salesReportToPdf = (report: iSalesReport, range: iReportDateRange): Promise<Buffer> => {

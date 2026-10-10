@@ -140,11 +140,18 @@ onMounted(() => {
       @retry="ac.fetchData"
     >
       <div v-if="reportStore.salesReport" class="report-summary">
-        <BaseCard title="ยอดขายรวม">
+        <BaseCard title="ยอดขายสุทธิ">
           <p class="report-summary__value">{{ reportStore.salesReport.totalAmount.toLocaleString() }} บาท</p>
+          <p class="report-summary__hint">ไม่รวมรายการที่ยกเลิก</p>
         </BaseCard>
         <BaseCard title="จำนวน Invoice">
           <p class="report-summary__value">{{ reportStore.salesReport.invoiceCount }}</p>
+          <p v-if="reportStore.salesReport.cancelledCount" class="report-summary__hint">
+            ยกเลิก {{ reportStore.salesReport.cancelledCount }} ใบ
+          </p>
+        </BaseCard>
+        <BaseCard title="ยอดที่ยกเลิก">
+          <p class="report-summary__value">{{ reportStore.salesReport.cancelledAmount.toLocaleString() }} บาท</p>
         </BaseCard>
       </div>
 
@@ -216,6 +223,12 @@ onMounted(() => {
   color: var(--ink);
   font-size: 1.25rem;
   font-weight: 800;
+}
+
+.report-summary__hint {
+  margin: 2px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
 }
 
 .report-list {

@@ -6,15 +6,43 @@ import puppeteer, { type Browser } from 'puppeteer-core'
 import { env } from '@/config/env.js'
 import { toThaiBahtText } from './thaiBahtText.util.js'
 
+/**
+ * ระบุ timezone ตายตัว เพราะ server บน Vercel รันเป็น UTC ถ้าไม่ระบุ เวลาในเอกสารจะช้ากว่าเวลาไทย 7 ชั่วโมง
+ */
+const DOCUMENT_TIME_ZONE = 'Asia/Bangkok'
+
 /** ใช้ในเทมเพลตเป็น {{formatDate someDate}} จัดรูปแบบวันเวลาเป็นภาษาไทย เช่น "18 ก.ค. 2569 21:08" */
 Handlebars.registerHelper('formatDate', (value: string | Date) => {
-  return new Date(value).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })
+  return new Date(value).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short', timeZone: DOCUMENT_TIME_ZONE })
 })
 
-/** ใช้ในเทมเพลตเป็น {{formatCurrency totalAmount}} ใส่ comma คั่นหลักพันตามธรรมเนียมไทย */
+/**
+ * แปลงวันที่แบบ "YYYY-MM-DD" (ไม่มีเวลา เช่นช่วงวันที่จาก query string) เป็นวันที่ไทย เช่น "1 ก.ย. 2569"
+ * ให้ใช้ปฏิทิน พ.ศ. แบบเดียวกับ formatDate ทั้งเอกสาร
+ */
+export const formatDateOnly = (isoDate: string): string => {
+  return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('th-TH', { dateStyle: 'medium', timeZone: 'UTC' })
+}
+
+/** ใช้ในเทมเพลตเป็น {{formatCurrency totalAmount}} ใส่ comma คั่นหลักพัน และทศนิยม 2 ตำแหน่งเสมอให้หลักตรงกันในคอลัมน์ */
 Handlebars.registerHelper('formatCurrency', (value: number) => {
-  return Number(value).toLocaleString('th-TH')
+  return Number(value).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 })
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'ร่าง',
+  CONFIRMED: 'ยืนยันแล้ว',
+  FULFILLED: 'ส่งของแล้ว',
+  CANCELLED: 'ยกเลิก',
+}
+
+/** ใช้ในเทมเพลตเป็น {{formatOrderStatus orderStatus}} แปลงสถานะ order เป็นคำภาษาไทยสำหรับเอกสาร */
+Handlebars.registerHelper('formatOrderStatus', (value: string) => {
+  return ORDER_STATUS_LABELS[value] ?? value
+})
+
+/** ใช้ในเทมเพลตเป็น {{#if (eq a b)}} */
+Handlebars.registerHelper('eq', (a: unknown, b: unknown) => a === b)
 
 /** ใช้ในเทมเพลตเป็น {{formatBahtText totalAmount}} แปลงยอดเงินเป็นคำอ่านภาษาไทยสำหรับช่อง "จำนวนเงินเป็นตัวอักษร" */
 Handlebars.registerHelper('formatBahtText', (value: number) => {
@@ -101,6 +129,14 @@ export const renderPdf = async (template: string, data: Record<string, unknown>)
     const pdf = await page.pdf({
       printBackground: true,
       preferCSSPageSize: true,
+      // เลขหน้าวาดในพื้นที่ margin ล่างของ @page (16mm) ไม่กินพื้นที่เนื้อหา
+      // header/footer template ของ Chromium ไม่สืบทอด style จากหน้า จึงต้องกำหนด font เองทั้งหมด
+      displayHeaderFooter: true,
+      headerTemplate: '<span></span>',
+      footerTemplate: `
+        <div style="width: 100%; padding: 0 12mm; font-family: 'Noto Sans Thai', 'Tahoma', sans-serif; font-size: 9px; color: #767676; text-align: right;">
+          หน้า <span class="pageNumber"></span> / <span class="totalPages"></span>
+        </div>`,
     })
     return Buffer.from(pdf)
   } finally {

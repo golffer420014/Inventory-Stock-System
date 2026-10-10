@@ -15,8 +15,12 @@ export interface iSalesReportRow {
 
 export interface iSalesReport {
   rows: iSalesReportRow[]
+  /** ยอดขายสุทธิ ไม่รวม invoice ของ order ที่ถูกยกเลิก */
   totalAmount: number
+  /** จำนวน invoice ทั้งหมดในช่วงวันที่ รวมที่ถูกยกเลิกด้วย (ตรงกับจำนวนแถวใน rows) */
   invoiceCount: number
+  cancelledAmount: number
+  cancelledCount: number
 }
 
 export interface iInventoryReportProductRow {

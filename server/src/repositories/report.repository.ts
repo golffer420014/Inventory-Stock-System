@@ -37,10 +37,17 @@ export const reportRepository = {
       createdAt: row.created_at,
     }))
 
+    // order ที่ CONFIRMED แล้ว (มี invoice แล้ว) ยังยกเลิกได้ จึงต้องแยกยอดของ invoice เหล่านั้นออกจากยอดขายสุทธิ
+    const cancelledRows = rows.filter((row) => row.orderStatus === 'CANCELLED')
+    const activeRows = rows.filter((row) => row.orderStatus !== 'CANCELLED')
+    const sumAmount = (list: typeof rows) => list.reduce((sum, row) => sum + row.totalAmount, 0)
+
     return {
       rows,
-      totalAmount: rows.reduce((sum, row) => sum + row.totalAmount, 0),
+      totalAmount: sumAmount(activeRows),
       invoiceCount: rows.length,
+      cancelledAmount: sumAmount(cancelledRows),
+      cancelledCount: cancelledRows.length,
     }
   },
 
